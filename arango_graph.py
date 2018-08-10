@@ -1,5 +1,4 @@
 import sys, os
-import collections
 import logging
 
 import MySQLdb
@@ -235,7 +234,7 @@ def get_collection_docs(db, collection):
     return l
 
 
-l = get_collection_docs(db, 'transaction')
+# l = get_collection_docs(db, 'transaction')
 
 
 def get_graph_transactions(db):
@@ -267,5 +266,4 @@ def get_graph_transactions(db):
                     l.append(vertex_tx)
     return l
 
-
-# l = get_graph_transactions(db)
+#l = get_graph_transactions(db)
