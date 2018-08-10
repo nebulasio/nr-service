@@ -1,5 +1,6 @@
-import os
+import sys, os
 import collections
+import logging
 
 import MySQLdb
 from arango import ArangoClient
@@ -14,7 +15,26 @@ collection_list = ['height', 'address', 'transaction']
 edge_list = ['height_next', 'height_txs', 'from_txs', 'txs_to']
 
 
-def init_db(db):
+def get_logger():
+    logger = logging.getLogger('transaction graph')
+    logger.setLevel(logging.DEBUG)
+
+    # create Stream Handler.
+    ch = logging.StreamHandler()
+    ch.setLevel(logging.DEBUG)
+    # create formatter and add it to the handlers
+    formatter = logging.Formatter(
+        '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    ch.setFormatter(formatter)
+    # add the handlers to the logger
+    logger.addHandler(ch)
+    return logger
+
+
+logger = get_logger()
+
+
+def create_db(db):
     if not db.has_database(dbname):
         db.create_database(dbname)
 
@@ -64,7 +84,7 @@ def init_db(db):
             to_vertex_collections=['address'])
 
 
-def clear_db(db):
+def drop_db(db):
     if db.has_graph('txs_graph'):
         db.delete_graph('txs_graph')
 
@@ -75,14 +95,24 @@ def clear_db(db):
     return
 
 
+def clear_db(db):
+    for collection in db.collections():
+        if collection['system'] is False:
+            name = collection['name']
+            db.collection(name).truncate()
+    return
+
+
+# drop_db(db)
+# create_db(db)
 # clear_db(db)
-# init_db(db)
+# logger.info('clear db')
 
 
 def get_transactions_from_mysql(start_block, end_block):
     db = MySQLdb.connect('localhost', dbuser, dbpass, dbname, charset='utf8')
     cursor = db.cursor()
-    sql = 'select * from nebulas_transaction_db where height>=%d and height<=%d' % (
+    sql = 'select * from nebulas_transaction_db where height>=%s and height<=%s' % (
         start_block, end_block)
 
     try:
@@ -94,18 +124,19 @@ def get_transactions_from_mysql(start_block, end_block):
     return tuple()
 
 
-# txs = get_transactions_from_mysql(256506, 256507)
+# txs = get_transactions_from_mysql(sys.argv[1], sys.argv[2])
+# logger.info('get transaction from mysql')
 
 
 def build_arango_graph(db, txs):
-    collection_height = db['height']
-    collection_address = db['address']
-    collection_transaction = db['transaction']
+    collection_height = db.collection('height')
+    collection_address = db.collection('address')
+    collection_transaction = db.collection('transaction')
 
-    edge_height_next = db['height_next']
-    edge_height_txs = db['height_txs']
-    edge_from_txs = db['from_txs']
-    edge_txs_to = db['txs_to']
+    edge_height_next = db.collection('height_next')
+    edge_height_txs = db.collection('height_txs')
+    edge_from_txs = db.collection('from_txs')
+    edge_txs_to = db.collection('txs_to')
 
     for tx in txs:
         source = tx[4]
@@ -146,6 +177,14 @@ def build_arango_graph(db, txs):
         if not collection_transaction.has(str(tx[0])):
             collection_transaction.insert(d)
 
+        _key = str(height - 1) + '-' + str(height)
+        if collection_height.has(str(height - 1)) and collection_height.has(
+                str(height)) and not edge_height_next.has(_key):
+            edge_height_next.insert({
+                '_key': _key,
+                '_from': 'height/' + str(height - 1),
+                '_to': 'height/' + str(height)
+            })
         _key = str(height) + '-' + str(height + 1)
         if collection_height.has(str(height)) and collection_height.has(
                 str(height + 1)) and not edge_height_next.has(_key):
@@ -177,20 +216,26 @@ def build_arango_graph(db, txs):
                 '_to': 'address/' + target
             })
 
+        logger.info('done with height %d' % height)
     return
 
 
 # build_arango_graph(db, txs)
+# logger.info('build arango graph')
 
 
 def get_collection_docs(db, collection):
+    l = list()
     if not db.has_collection(collection):
-        return collections.deque()
+        return l
     cursor = db.collection(collection).all()
-    return cursor.batch()
+    while cursor.has_more():
+        cursor.fetch()
+    l = cursor.batch()
+    return l
 
 
-# get_collection_docs(db, 'transaction')
+l = get_collection_docs(db, 'transaction')
 
 
 def get_graph_transactions(db):
