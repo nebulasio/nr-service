@@ -6,8 +6,7 @@ from arango import ArangoClient
 
 dbuser = os.environ['DB_USER_NAME']
 dbpass = os.environ['DB_PASSWORD']
-dbname = os.environ['NEBULAS_DB']
-client = ArangoClient(protocol='http', host='localhost', port=8529)
+dbname = os.environ['NEBULAS_DB'] client = ArangoClient(protocol='http', host='localhost', port=8529)
 db = client.db(username=dbuser, password=dbpass, name=dbname)
 
 collection_list = ['height', 'address', 'transaction']
