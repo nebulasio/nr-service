@@ -6,7 +6,8 @@ from arango import ArangoClient
 
 dbuser = os.environ['DB_USER_NAME']
 dbpass = os.environ['DB_PASSWORD']
-dbname = os.environ['NEBULAS_DB'] client = ArangoClient(protocol='http', host='localhost', port=8529)
+dbname = os.environ['NEBULAS_DB']
+client = ArangoClient(protocol='http', host='localhost', port=8529)
 db = client.db(username=dbuser, password=dbpass, name=dbname)
 
 collection_list = ['height', 'address', 'transaction']
@@ -42,10 +43,10 @@ def create_db(db):
 
     if db.has_collection('transaction'):
         collection = db.collection('transaction')
-        collection.add_hash_index(fields=['height'])
+        collection.add_skiplist_index(fields=['height'])
         collection.add_hash_index(fields=['from'])
         collection.add_hash_index(fields=['to'])
-        collection.add_hash_index(fields=['timestamp'])
+        collection.add_skiplist_index(fields=['timestamp'])
         collection.add_hash_index(fields=['status'])
 
     if not db.has_graph('txs_graph'):
@@ -214,7 +215,8 @@ def build_arango_graph(db, txs):
                 '_to': 'address/' + target
             })
 
-        logger.info('done with height %d' % height)
+        if height % 10 == 0:
+            logger.info('done with height %d' % height)
     return
 
 
