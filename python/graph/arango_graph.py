@@ -4,8 +4,10 @@ Author: Chenmin Wang
 Date: 2018/08/13
 '''
 
+import sys
+sys.path.append('../')
 import os
-from ..util.util import LOG
+from util.util import LOG
 
 import MySQLdb
 import arango
