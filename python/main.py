@@ -16,7 +16,7 @@ from .benchmark import select_comparison
 
 def main():
     '''
-    func main
+    usage - func main
     '''
 
     # arango_graph.clear_db(database)
@@ -34,11 +34,7 @@ def main():
     # arango_graph.build_arango_graph(database, txs)
     # LOG.info('build arango graph')
 
-    for b in block_interval:
-        select_comparison.select_mysql(start_block, end_block, b, compared_times)
-        select_comparison.select_arango(start_block, end_block, b, compared_times)
-        select_comparison.select_pyarango(start_block, end_block, b, compared_times)
-
+    select_comparison.benchmark(start_block, end_block, 70, compared_times)
 
 if __name__ == '__main__':
     main()
