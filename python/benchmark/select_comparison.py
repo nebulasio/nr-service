@@ -11,7 +11,7 @@ import time
 import MySQLdb
 from pyArango.connection import Connection
 from ..graph.arango_graph import dbuser, dbpass, dbname
-from ..graph.arango_graph import db
+from ..graph.arango_graph import database
 
 
 def select_mysql(start_block, end_block, block_interval, compared_times):
@@ -84,7 +84,7 @@ def select_arango(start_block, end_block, block_interval, compared_times):
         # print i, aql
 
         time_begin = time.time()
-        cursor = db.aql.execute(aql, count=True, batch_size=0x7fffffff)
+        cursor = database.aql.execute(aql, count=True, batch_size=0x7fffffff)
         time_spend = time_spend + time.time() - time_begin
         # print cursor.count()
 

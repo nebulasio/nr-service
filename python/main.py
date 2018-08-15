@@ -9,7 +9,7 @@ import sys
 from .util.util import LOG
 
 from .graph import arango_graph
-from .graph.arango_graph import db
+from .graph.arango_graph import database
 
 from .benchmark import select_comparison
 
@@ -19,20 +19,20 @@ def main():
     func main
     '''
 
-    # arango_graph.clear_db(db)
-    # arango_graph.drop_db(db)
-    # arango_graph.create_db(db)
+    # arango_graph.clear_db(database)
+    # arango_graph.drop_db(database)
+    # arango_graph.create_db(database)
 
     start_block = int(sys.argv[1])
     end_block = int(sys.argv[2])
     block_interval = [240, 1440, 2880, 5760, 17280, 40320]
     compared_times = int(sys.argv[3])
 
-    txs = arango_graph.get_transactions_from_mysql(sys.argv[1], sys.argv[2])
-    LOG.info('get transaction from mysql')
+    # txs = arango_graph.get_transactions_from_mysql(start_block, end_block)
+    # LOG.info('get transaction from mysql')
 
-    arango_graph.build_arango_graph(db, txs)
-    LOG.info('build arango graph')
+    # arango_graph.build_arango_graph(database, txs)
+    # LOG.info('build arango graph')
 
     for b in block_interval:
         select_comparison.select_mysql(start_block, end_block, b, compared_times)

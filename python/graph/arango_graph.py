@@ -16,7 +16,6 @@ dbpass = os.environ['DB_PASSWORD']
 dbname = os.environ['NEBULAS_DB']
 client = ArangoClient(protocol='http', host='localhost', port=8529)
 database = client.db(username=dbuser, password=dbpass, name=dbname)
-print type(database.graph('txs_graph'))
 
 collection_list = ['height', 'address', 'transaction']
 edge_list = ['height_next', 'height_txs', 'from_txs', 'txs_to']
