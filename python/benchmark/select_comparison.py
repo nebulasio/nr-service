@@ -3,6 +3,7 @@
 Author: Chenmin Wang
 Date: 2018/08/13
 '''
+
 import sys
 sys.path.append('../')
 import random
@@ -168,6 +169,7 @@ def plot(data, filename):
 
     import os
     os.system("pdflatex {}.tex".format(filename))
+
 
 def main():
     '''
