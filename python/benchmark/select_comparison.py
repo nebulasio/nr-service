@@ -160,6 +160,7 @@ def plot(data, filename):
     assert isinstance(data["pyarango"], list)
 
     figure = pgf.Plot()
+    figure.append_style('legend pos=north west');
     figure.addplot(range(0, len(data["mysql"])), lambda x: x, lambda x: data["mysql"][x], legend='MySQL')
     figure.addplot(range(0, len(data["arango"])), lambda x: x, lambda x: data["arango"][x], legend='Arango')
     figure.addplot(range(0, len(data["pyarango"])), lambda x: x, lambda x: data["pyarango"][x], legend='pyArango')
