@@ -36,7 +36,7 @@ def select_mysql(mysql_db, start_block, end_block):
     sql = '''select _from, _to, value, height, _timestamp, type_from,
             type_to, gas_used, gas_price, contract_address from
             nebulas_transaction_db where status=1 and height>%d and height<%d''' % (
-                start_block, end_block)
+        start_block, end_block)
     # print i, sql
 
     try:
@@ -129,8 +129,12 @@ def benchmark(start_block, end_block, block_interval, compared_times):
     conn = Connection(username=dbuser, password=dbpass)
     pyarango_db = conn[dbname]
 
-    ret = {"mysql":[], "arango":[], "pyarango":[]}
-    ret["param"] = {"start_block": start_block, "end_block": end_block, "block_interval": block_interval}
+    ret = {"mysql": [], "arango": [], "pyarango": []}
+    ret["param"] = {
+        "start_block": start_block,
+        "end_block": end_block,
+        "block_interval": block_interval
+    }
 
     while compared_times > 0:
         s = start_block + random.random() * (
@@ -161,9 +165,21 @@ def plot(data, filename):
 
     figure = pgf.Plot()
     figure.append_style('legend pos=north west');
-    figure.addplot(range(0, len(data["mysql"])), lambda x: x, lambda x: data["mysql"][x], legend='MySQL')
-    figure.addplot(range(0, len(data["arango"])), lambda x: x, lambda x: data["arango"][x], legend='Arango')
-    figure.addplot(range(0, len(data["pyarango"])), lambda x: x, lambda x: data["pyarango"][x], legend='pyArango')
+    figure.addplot(
+        range(0, len(data["mysql"])),
+        lambda x: x,
+        lambda x: data["mysql"][x],
+        legend='MySQL')
+    figure.addplot(
+        range(0, len(data["arango"])),
+        lambda x: x,
+        lambda x: data["arango"][x],
+        legend='Arango')
+    figure.addplot(
+        range(0, len(data["pyarango"])),
+        lambda x: x,
+        lambda x: data["pyarango"][x],
+        legend='pyArango')
     figure_content = figure.dump()
     figure_content = pgf.make_standalone(figure_content)
     open("{}.tex".format(filename), "w").write(figure_content)
@@ -181,11 +197,10 @@ def main():
     block_interval = [240, 1440, 2880, 5760, 17280, 40320]
     compared_times = int(sys.argv[3])
 
-    all_result = {"mysql":[], "arango":[], "pyarango":[]}
+    all_result = {"mysql": [], "arango": [], "pyarango": []}
     raw_data = []
 
-
-    functor = lambda x, ret: all_result[x].append(sum(ret[x])/len(ret[x]))
+    functor = lambda x, ret: all_result[x].append(sum(ret[x]) / len(ret[x]))
     for interval in block_interval:
         result = benchmark(start_block, end_block, interval, compared_times)
 
@@ -201,5 +216,32 @@ def main():
     plot(all_result, "select_compare")
 
 
+def plot_from_file(filename):
+    '''
+    usage - build plot from file if raw data json file exists
+    @filename - raw data json file name
+    @return - None
+    '''
+
+    assert isinstance(filename, str)
+
+    json_data = open(filename).read()
+    raw_data = json.loads(json_data)
+
+    all_result = {"mysql": [], "arango": [], "pyarango": []}
+
+    functor = lambda x, ret: all_result[x].append(sum(ret[x]) / len(ret[x]))
+    for result in raw_data:
+        functor("mysql", result)
+        functor("arango", result)
+        functor("pyarango", result)
+
+    plot(all_result, "select_compare")
+
+
 if __name__ == '__main__':
-    main()
+    import os.path
+    if not os.path.isfile('select_performance_data.json'):
+        main()
+    else:
+        plot_from_file('select_performance_data.json')
