@@ -59,6 +59,8 @@ add_definitions(-DNEBULAS_DB=$ENV{NEBULAS_DB})
 
 
 include_directories(${PROJECT_SOURCE_DIR}/src/)
+include_directories(${PROJECT_SOURCE_DIR}/lib/cpp-sql/)
+include_directories(/usr/include/cppconn)
 include_directories(/usr/local/include)
 include_directories($ENV{BOOST_DIR}/include)
 include_directories($ENV{BOOST_DIR})
@@ -70,5 +72,8 @@ link_directories(/usr/local/lib)
 add_subdirectory(src)
 enable_testing()
 
-set(common_libs tga_engine fuerte velocypack boost_system pthread curl ssl crypto boost_date_time glog)
+set(common_libs tga_engine fuerte velocypack boost_system boost_thread pthread curl ssl crypto mysqlcppconn boost_date_time glog)
 
+if(EXISTS "${PROJECT_SOURCE_DIR}/cmd/CMakeLists.txt")
+  add_subdirectory(cmd)
+endif()

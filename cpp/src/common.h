@@ -2,11 +2,6 @@
 #include <glog/logging.h>
 
 #include <algorithm>
-#include <boost/asio.hpp>
-#include <boost/foreach.hpp>
-#include <boost/multiprecision/cpp_int.hpp>
-#include <boost/property_tree/json_parser.hpp>
-#include <boost/property_tree/ptree.hpp>
 #include <cmath>
 #include <fstream>
 #include <iostream>
@@ -14,6 +9,15 @@
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
+
+#include <boost/asio.hpp>
+#include <boost/foreach.hpp>
+#include <boost/multiprecision/cpp_int.hpp>
+#include <boost/property_tree/json_parser.hpp>
+#include <boost/property_tree/ptree.hpp>
+
+#include <fuerte/connection.h>
+#include <fuerte/requests.h>
 
 namespace neb {
 
