@@ -149,4 +149,4 @@ build
 .DS_Store
 # lib
 lib/*
-bin/*
+cpp/bin/*

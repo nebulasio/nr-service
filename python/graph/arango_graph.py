@@ -60,8 +60,8 @@ def create_db(db):
 
     assert isinstance(db, arango.database.StandardDatabase)
 
-    if not db.has_database(dbname):
-        db.create_database(dbname)
+    # if not db.has_database(dbname):
+        # db.create_database(dbname)
 
     for collection in collection_list:
         if not db.has_collection(collection):
@@ -308,3 +308,16 @@ def get_graph_transactions(db):
                     vertex_tx = graph.vertex(_to)
                     l.append(vertex_tx)
     return l
+
+
+def main():
+    '''
+    usage - func main
+    '''
+    clear_db(database)
+    # drop_db(database)
+    # create_db(database)
+
+
+if __name__ == '__main__':
+    main()
