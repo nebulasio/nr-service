@@ -10,5 +10,6 @@ int main(int argc, char *argv[]) {
 
   neb::transaction_table_t info_array;
   info_array.push_back(info);
+
   return 0;
 }

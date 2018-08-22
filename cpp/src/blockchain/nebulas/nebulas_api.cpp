@@ -1,6 +1,10 @@
 #include "blockchain/nebulas/nebulas_api.h"
 #include "utils/base58.h"
 
+#include <boost/foreach.hpp>
+#include <boost/property_tree/json_parser.hpp>
+#include <boost/property_tree/ptree.hpp>
+
 namespace neb {
 namespace nebulas {
 
