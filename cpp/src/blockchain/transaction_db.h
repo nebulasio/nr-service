@@ -1,12 +1,8 @@
 #pragma once
 
-#include "common.h"
+#include "blockchain/db.h"
 #include "sql/ntobject.h"
 #include "sql/table.h"
-
-#include <fuerte/connection.h>
-#include <fuerte/requests.h>
-#include <velocypack/velocypack-aliases.h>
 
 namespace neb {
 
@@ -35,51 +31,90 @@ typedef ntarray<tx_id, nonce, status, chainId, from, timestamp, gas_used,
     transaction_table_t;
 typedef typename transaction_table_t::row_type transaction_info_t;
 
-class transaction_db_interface {};
-
-template <typename DB> class transaction_db : public transaction_db_interface {
+class transaction_db_interface {
 public:
-  transaction_db() {}
+  virtual std::vector<transaction_info_t>
+  read_transaction_simplified_from_db_with_duration(
+      block_height_t start_block, block_height_t end_block) = 0;
+};
+
+template <typename DB>
+class transaction_db : public db<DB>, public transaction_db_interface {
+public:
+  transaction_db() : db<DB>() {}
   transaction_db(const std::string &url, const std::string &usrname,
                  const std::string &passwd, const std::string &dbname)
-      : m_dbname(dbname) {
-    ::arangodb::fuerte::ConnectionBuilder conn_builder;
-    conn_builder.host(url);
-    conn_builder.authenticationType(
-        ::arangodb::fuerte::AuthenticationType::Basic);
-    conn_builder.user(usrname);
-    conn_builder.password(passwd);
+      : db<DB>(url, usrname, passwd, dbname) {}
 
-    m_event_loop_service_ptr =
-        std::shared_ptr<::arangodb::fuerte::EventLoopService>(
-            new ::arangodb::fuerte::EventLoopService(1));
-    m_connection_ptr = conn_builder.connect(*m_event_loop_service_ptr);
+  virtual std::vector<transaction_info_t>
+  read_transaction_simplified_from_db_with_duration(block_height_t start_block,
+                                                    block_height_t end_block) {
+    const std::string aql =
+        "for tx in transaction filter tx.status!=0 and tx.height>=" +
+        std::to_string(start_block) +
+        " and tx.height<=" + std::to_string(end_block) +
+        " return {status:tx.status, from:tx.from, to:tx.to, "
+        "tx_value:tx.tx_value, height:tx.height, timestamp:tx.timestamp, "
+        "type_from:tx.type_from, type_to:tx.type_to, gas_used:tx.gas_used, "
+        "gas_price:tx.gas_price, contract_address:tx.contract_address}";
+    // LOG(INFO) << aql;
+    auto resp_ptr = this->aql_query(aql);
+    return parse_from_response(std::move(resp_ptr));
   }
 
-  inline const std::shared_ptr<::arangodb::fuerte::Connection>
-  transaction_db_connection_ptr() const {
-    return m_connection_ptr;
+private:
+  void set_transaction_info(transaction_info_t &info, const VPackSlice &slice,
+                            const std::string &key) {
+    if (key.compare("status") == 0) {
+      info.template set<::neb::status>(slice.getInt());
+    }
+    if (key.compare("from") == 0) {
+      info.template set<::neb::from>(slice.copyString());
+    }
+    if (key.compare("to") == 0) {
+      info.template set<::neb::to>(slice.copyString());
+    }
+    if (key.compare("tx_value") == 0) {
+      info.template set<::neb::tx_value>(slice.copyString());
+    }
+    if (key.compare("height") == 0) {
+      info.template set<::neb::height>(slice.getInt());
+    }
+    if (key.compare("timestamp") == 0) {
+      info.template set<::neb::timestamp>(slice.copyString());
+    }
+    if (key.compare("type_from") == 0) {
+      info.template set<::neb::type_from>(slice.copyString());
+    }
+    if (key.compare("type_to") == 0) {
+      info.template set<::neb::type_to>(slice.copyString());
+    }
+    if (key.compare("gas_used") == 0) {
+      info.template set<::neb::gas_used>(slice.copyString());
+    }
+    if (key.compare("gas_price") == 0) {
+      info.template set<::neb::gas_price>(slice.copyString());
+    }
+    if (key.compare("contract_address") == 0) {
+      info.template set<::neb::contract_address>(slice.copyString());
+    }
   }
 
-public:
-  std::unique_ptr<::arangodb::fuerte::Response>
-  aql_query(const std::string &aql) {
-    auto request =
-        ::arangodb::fuerte::createRequest(::arangodb::fuerte::RestVerb::Post,
-                                          "/_db/" + m_dbname + "/_api/cursor");
-    VPackBuilder builder;
-    builder.openObject();
-    builder.add("query", VPackValue(aql));
-    builder.close();
-    request->addVPack(builder.slice());
-    return m_connection_ptr->sendRequest(std::move(request));
+  std::vector<transaction_info_t> parse_from_response(
+      const std::unique_ptr<::arangodb::fuerte::Response> resp_ptr) {
+    std::vector<transaction_info_t> rs;
+    auto documents = resp_ptr->slices().front().get("result");
+    for (size_t i = 0; i < documents.length(); i++) {
+      auto doc = documents.at(i);
+      transaction_info_t info;
+      for (size_t j = 0; j < doc.length(); j++) {
+        std::string key = doc.keyAt(j).copyString();
+        set_transaction_info(info, doc.valueAt(j), key);
+      }
+      rs.push_back(info);
+    }
+    return rs;
   }
-
-protected:
-  std::shared_ptr<::arangodb::fuerte::EventLoopService>
-      m_event_loop_service_ptr;
-  std::shared_ptr<::arangodb::fuerte::Connection> m_connection_ptr;
-  std::string m_dbname;
 
 }; // end class transaction_db
 } // namespace neb
