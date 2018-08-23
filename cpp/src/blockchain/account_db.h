@@ -92,9 +92,7 @@ public:
         m_tdb_ptr->read_success_and_failed_transaction_from_db_with_duration(
             start_block, end_block);
     LOG(INFO) << "template account_db, read transaction done";
-    std::unordered_map<account_address_t, account_balance_t> addr_balance =
-        set_balance_from_genesis_block(m_addr_height_list, m_height_addr_val);
-    LOG(INFO) << "init genesis block done.";
+    std::unordered_map<account_address_t, account_balance_t> addr_balance;
 
     for (auto it = txs.begin(); it != txs.end(); it++) {
       std::string from = it->template get<::neb::from>();
@@ -167,18 +165,6 @@ public:
       }
     }
     LOG(INFO) << "template account_db, init height address value finish";
-  }
-
-protected:
-  virtual std::unordered_map<account_address_t, account_balance_t>
-  set_balance_from_genesis_block(
-      std::unordered_map<account_address_t, std::vector<block_height_t>>
-          &addr_height_list,
-      std::unordered_map<block_height_t, std::unordered_map<account_address_t,
-                                                            account_balance_t>>
-          &height_addr_val) {
-    LOG(INFO) << "class base";
-    return std::unordered_map<account_address_t, account_balance_t>();
   }
 
 protected:
