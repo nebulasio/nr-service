@@ -7,4 +7,5 @@ add_library(tga_engine
   utils/util.cpp
   blockchain/nebulas/nebulas_currency.cpp
   blockchain/nebulas/nebulas_transaction_db.cpp
-  blockchain/nebulas/nebulas_api.cpp)
+  blockchain/nebulas/nebulas_api.cpp
+  nr/nebulas_rank.cpp)
