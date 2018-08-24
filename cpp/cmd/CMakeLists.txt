@@ -11,3 +11,9 @@ target_link_libraries(blockchain ${common_libs} gflags)
 add_executable(transaction_writer transaction_writer.cpp)
 target_link_libraries(transaction_writer ${common_libs} gflags)
 
+add_executable(account_writer account_writer.cpp)
+target_link_libraries(account_writer ${common_libs} gflags)
+
+add_executable(nr nr.cpp)
+target_link_libraries(nr ${common_libs} gflags)
+
