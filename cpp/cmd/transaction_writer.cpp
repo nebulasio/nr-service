@@ -13,7 +13,7 @@ int main(int argc, char *argv[]) {
       std::make_shared<nebulas_transaction_db_t>(db);
 
   std::shared_ptr<::arangodb::fuerte::Connection> conn_ptr =
-      ptr->transaction_db_connection_ptr();
+      ptr->db_connection_ptr();
 
   ptr->append_transaction_to_graph();
   return 0;

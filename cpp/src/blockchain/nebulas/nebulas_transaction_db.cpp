@@ -169,7 +169,8 @@ void nebulas_transaction_db::insert_document(VPackBuilder &builder_arr,
 
 template <class T>
 void nebulas_transaction_db::insert_documents_to_collection(
-    const std::string &collection_name, const std::vector<T> &documents) {
+    const std::string &collection_name, const std::vector<T> &documents,
+    int32_t payload_size) {
 
   auto request = ::arangodb::fuerte::createRequest(
       ::arangodb::fuerte::RestVerb::Post,
@@ -178,9 +179,27 @@ void nebulas_transaction_db::insert_documents_to_collection(
   VPackBuilder builder_arr;
   builder_arr.openArray();
 
-  for (auto it = documents.begin(); it != documents.end(); it++) {
-    insert_document(builder_arr, collection_name, *it);
+  for (size_t i = 0; i < documents.size(); i++) {
+    if (i > 0 && i % payload_size == 0) {
+      auto request = ::arangodb::fuerte::createRequest(
+          ::arangodb::fuerte::RestVerb::Post,
+          "/_db/" + m_dbname + "/_api/document/" + collection_name);
+
+      // send request with array length payload_size
+      builder_arr.close();
+      request->addVPack(builder_arr.slice());
+      m_connection_ptr->sendRequest(std::move(request));
+
+      builder_arr.clear();
+      builder_arr.openArray();
+    }
+
+    insert_document(builder_arr, collection_name, documents[i]);
   }
+
+  // for (auto it = documents.begin(); it != documents.end(); it++) {
+  // insert_document(builder_arr, collection_name, *it);
+  //}
 
   builder_arr.close();
   request->addVPack(builder_arr.slice());
