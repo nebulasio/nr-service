@@ -52,15 +52,14 @@ public:
   virtual std::vector<transaction_info_t>
   read_transaction_simplified_from_db_with_duration(block_height_t start_block,
                                                     block_height_t end_block) {
-    const std::string aql =
-        "for tx in transaction filter tx.status!=0 and tx.height>=" +
-        std::to_string(start_block) +
-        " and tx.height<=" + std::to_string(end_block) +
-        " return {status:tx.status, from:tx.from, to:tx.to, "
-        "tx_value:tx.tx_value, height:tx.height, timestamp:tx.timestamp, "
-        "type_from:tx.type_from, type_to:tx.type_to, gas_used:tx.gas_used, "
-        "gas_price:tx.gas_price, contract_address:tx.contract_address}";
-    LOG(INFO) << aql;
+    const std::string aql = boost::str(
+        boost::format(
+            "for tx in transaction filter tx.status!=0 and tx.height>=%1% and "
+            "tx.height<=%2% return {status:tx.status, from:tx.from, to:tx.to, "
+            "tx_value:tx.tx_value, height:tx.height, timestamp:tx.timestamp, "
+            "type_from:tx.type_from, type_to:tx.type_to, gas_used:tx.gas_used, "
+            "gas_price:tx.gas_price, contract_address:tx.contract_address}") %
+        start_block % end_block);
     auto resp_ptr = this->aql_query(aql);
     return parse_from_response(std::move(resp_ptr));
   }
@@ -68,14 +67,14 @@ public:
   virtual std::vector<transaction_info_t>
   read_success_and_failed_transaction_from_db_with_duration(
       block_height_t start_block, block_height_t end_block) {
-    const std::string aql =
-        "for tx in transaction filter tx.height>=" +
-        std::to_string(start_block) +
-        " and tx.height<=" + std::to_string(end_block) +
-        " return {status:tx.status, from:tx.from, to:tx.to, "
-        "tx_value:tx.tx_value, height:tx.height, timestamp:tx.timestamp, "
-        "type_from:tx.type_from, type_to:tx.type_to, gas_used:tx.gas_used, "
-        "gas_price:tx.gas_price, contract_address:tx.contract_address}";
+    const std::string aql = boost::str(
+        boost::format(
+            "for tx in transaction filter tx.height>=%1% and tx.height<=%2% "
+            "return {tx_id:tx.tx_id, status:tx.status, from:tx.from, to:tx.to, "
+            "tx_value:tx.tx_value, height:tx.height, timestamp:tx.timestamp, "
+            "type_from:tx.type_from, type_to:tx.type_to, gas_used:tx.gas_used, "
+            "gas_price:tx.gas_price, contract_address:tx.contract_address}") %
+        start_block % end_block);
     auto resp_ptr = this->aql_query(aql);
     return parse_from_response(std::move(resp_ptr));
   }
