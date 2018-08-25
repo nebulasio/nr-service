@@ -15,13 +15,22 @@ nebulas_transaction_db::nebulas_transaction_db(const std::string &url,
 block_height_t nebulas_transaction_db::get_max_height_from_db() {
 
   std::unique_ptr<::arangodb::fuerte::Response> resp_ptr = aql_query(
-      "for h in height sort h.block_height desc limit 1 return h.block_height");
+      "for tx in transaction sort tx.height desc limit 1 return tx.height");
 
   auto height_doc = resp_ptr->slices().front().get("result");
   if (height_doc.isNone() || height_doc.isEmptyArray()) {
-    return 0;
+    return 1;
   }
   return height_doc.at(0).getInt();
+}
+
+void nebulas_transaction_db::remove_transactions_this_block_height(
+    block_height_t block_height) {
+  const std::string aql =
+      boost::str(boost::format("for tx in transaction filter tx.height==%1% "
+                               "remove tx in transaction") %
+                 block_height);
+  aql_query(aql);
 }
 
 int64_t nebulas_transaction_db::get_max_tx_id_from_db() {
@@ -42,6 +51,9 @@ void nebulas_transaction_db::insert_document(VPackBuilder &builder_arr,
                                              const std::string &collection_name,
                                              const T &document) {
   auto f_height = [&]() -> void {
+    if (document.template get<::neb::tx_id>() > 0) {
+      return;
+    }
     block_height_t height = document.template get<::neb::height>();
     VPackBuilder builder;
     builder.openObject();
@@ -77,6 +89,8 @@ void nebulas_transaction_db::insert_document(VPackBuilder &builder_arr,
     builder.openObject();
     builder.add("_key",
                 VPackValue(std::to_string(it->template get<::neb::tx_id>())));
+    builder.add("tx_id",
+                VPackValue(std::to_string(it->template get<::neb::tx_id>())));
     builder.add("nonce", VPackValue(it->template get<::neb::nonce>()));
     builder.add("status", VPackValue(it->template get<::neb::status>()));
     builder.add("chainId", VPackValue(it->template get<::neb::chainId>()));
@@ -84,7 +98,7 @@ void nebulas_transaction_db::insert_document(VPackBuilder &builder_arr,
     builder.add("timestamp", VPackValue(it->template get<::neb::timestamp>()));
     builder.add("gas_used", VPackValue(it->template get<::neb::gas_used>()));
     builder.add("tx_value", VPackValue(it->template get<::neb::tx_value>()));
-    builder.add("data", VPackValue(it->template get<::neb::data>()));
+    // builder.add("data", VPackValue(it->template get<::neb::data>()));
     builder.add("to", VPackValue(it->template get<::neb::to>()));
     builder.add("contract_address",
                 VPackValue(it->template get<::neb::contract_address>()));
@@ -219,10 +233,11 @@ void nebulas_transaction_db::append_transaction_graph_vertex_and_edge_by_block(
 void nebulas_transaction_db::append_transaction_to_graph() {
 
   block_height_t last_height = get_max_height_from_db();
+  remove_transactions_this_block_height(last_height);
   block_height_t current_height = ::neb::nebulas::get_block_height();
   int64_t tx_id = get_max_tx_id_from_db();
 
-  for (int h = last_height + 1; h < current_height; h++) {
+  for (int h = last_height; h < current_height; h++) {
 
     LOG(INFO) << h;
     std::string block_timestamp =
