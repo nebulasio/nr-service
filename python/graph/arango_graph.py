@@ -60,9 +60,20 @@ def create_db(db):
 
     assert isinstance(db, arango.database.StandardDatabase)
 
-    # if not db.has_database(dbname):
-        # db.create_database(dbname)
+    if not db.has_database(dbname):
+        db.create_database(dbname)
 
+    # collection account
+    if not db.has_collection('account'):
+        db.create_collection('account')
+    if db.has_collection('account'):
+        collection = db.collection('account')
+        collection.add_hash_index(fields=['address'])
+        collection.add_hash_index(fields=['type'])
+        collection.add_skiplist_index(fields=['height'])
+        collection.add_skiplist_index(fields=['create_at'])
+
+    # transaction graph
     for collection in collection_list:
         if not db.has_collection(collection):
             db.create_collection(collection)
