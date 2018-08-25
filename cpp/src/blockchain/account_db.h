@@ -12,10 +12,9 @@ define_nt(balance, std::string, "balance");
 define_nt(account_type, std::string, "type");
 define_nt(create_at, std::string, "create_at");
 
-template <class DB>
-using account_table_t =
-    ntarray<DB, address, balance, account_type, create_at, height>;
-typedef account_table_t<nebulas_db>::row_type account_info_t;
+typedef ntarray<address, balance, account_type, create_at, height>
+    account_table_t;
+typedef typename account_table_t::row_type account_info_t;
 
 namespace internal {
 template <typename TS> struct account_db_traits {};
@@ -32,6 +31,7 @@ template <> struct account_db_traits<eth_db> {
 
 class account_db_interface {
 public:
+  virtual std::vector<account_info_t> read_account_from_db() = 0;
   virtual account_balance_t get_account_balance(block_height_t height,
                                                 const std::string &address) = 0;
   virtual double get_normalized_value(double value) = 0;
@@ -42,15 +42,18 @@ public:
 template <class DB>
 class account_db : public db<DB>, public account_db_interface {
 public:
-  typedef account_table_t<::neb::internal::account_db_traits<DB>> table_t;
-  typedef typename table_t::row_type row_type;
-
   account_db() {}
   account_db(const std::string &url, const std::string &usrname,
              const std::string &passwd, const std::string &dbname)
       : db<DB>(url, usrname, passwd, dbname) {
     m_tdb_ptr =
         std::make_shared<transaction_db<DB>>(url, usrname, passwd, dbname);
+  }
+
+  virtual std::vector<account_info_t> read_account_from_db() {
+    const std::string aql = "for record in account return record";
+    auto resp_ptr = this->aql_query(aql);
+    return parse_from_response(std::move(resp_ptr));
   }
 
   virtual account_balance_t get_account_balance(block_height_t height,
@@ -165,6 +168,43 @@ public:
       }
     }
     LOG(INFO) << "template account_db, init height address value finish";
+  }
+
+private:
+  void set_account_info(account_info_t &info, const VPackSlice &slice,
+                        const std::string &key) {
+    if (key.compare("address") == 0) {
+      info.template set<::neb::address>(slice.copyString());
+    }
+    if (key.compare("balance") == 0) {
+      info.template set<::neb::balance>(slice.copyString());
+    }
+    if (key.compare("height") == 0) {
+      info.template set<::neb::height>(slice.getInt());
+    }
+    if (key.compare("account_type") == 0) {
+      info.template set<::neb::account_type>(slice.copyString());
+    }
+    if (key.compare("create_at") == 0) {
+      info.template set<::neb::create_at>(slice.copyString());
+    }
+  }
+
+  std::vector<account_info_t> parse_from_response(
+      const std::unique_ptr<::arangodb::fuerte::Response> resp_ptr) {
+    std::vector<account_info_t> rs;
+
+    auto documents = resp_ptr->slices().front().get("result");
+    for (size_t i = 0; i < documents.length(); i++) {
+      auto doc = documents.at(i);
+      account_info_t info;
+      for (size_t j = 0; j < doc.length(); j++) {
+        std::string key = doc.keyAt(j).copyString();
+        set_account_info(info, doc.valueAt(j), key);
+      }
+      rs.push_back(info);
+    }
+    return rs;
   }
 
 protected:
