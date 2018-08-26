@@ -17,3 +17,6 @@ target_link_libraries(account_writer ${common_libs} gflags)
 add_executable(nr nr.cpp)
 target_link_libraries(nr ${common_libs} gflags)
 
+add_executable(lru_cache lru_cache.cpp)
+target_link_libraries(lru_cache ${common_libs} gflags)
+
