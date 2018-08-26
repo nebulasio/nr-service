@@ -33,11 +33,13 @@ void nebulas_transaction_db::remove_transactions_this_block_height(
   aql_query(aql);
 }
 
-int64_t nebulas_transaction_db::get_max_tx_id_from_db() {
+int64_t nebulas_transaction_db::get_max_tx_id_from_db(block_height_t height) {
 
-  std::unique_ptr<::arangodb::fuerte::Response> resp_ptr =
-      aql_query("for tx in transaction sort to_number(tx._key) desc limit 1 "
-                "return tx._key");
+  const std::string aql = boost::str(
+      boost::format("for tx in transaction filter tx.height==%1% sort "
+                    "to_number(tx._key) desc limit 1 return tx._key") %
+      height);
+  std::unique_ptr<::arangodb::fuerte::Response> resp_ptr = aql_query(aql);
 
   auto transaction_doc = resp_ptr->slices().front().get("result");
   if (transaction_doc.isNone() || transaction_doc.isEmptyArray()) {
@@ -235,7 +237,7 @@ void nebulas_transaction_db::append_transaction_to_graph() {
   block_height_t last_height = get_max_height_from_db();
   remove_transactions_this_block_height(last_height);
   block_height_t current_height = ::neb::nebulas::get_block_height();
-  int64_t tx_id = get_max_tx_id_from_db();
+  int64_t tx_id = get_max_tx_id_from_db(last_height - 1);
 
   for (int h = last_height; h < current_height; h++) {
 
@@ -266,6 +268,7 @@ void nebulas_transaction_db::append_transaction_to_graph() {
     transaction_info_t info;
     info.set<::neb::tx_id, ::neb::height>(-1, h);
     rs.push_back(info);
+    LOG(INFO) << "parsing block done, insert documents...";
     append_transaction_graph_vertex_and_edge_by_block(rs);
   }
 }

@@ -25,7 +25,7 @@ private:
                        const std::string &collection_name, const T &document);
 
   block_height_t get_max_height_from_db();
-  int64_t get_max_tx_id_from_db();
+  int64_t get_max_tx_id_from_db(block_height_t height);
   void remove_transactions_this_block_height(block_height_t block_height);
 
 }; // end class neubulas_transaction_db
