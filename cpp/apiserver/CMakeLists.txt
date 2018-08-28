@@ -1,1 +1,1 @@
-pybind11_add_module(neb apiserver.cpp)
+pybind11_add_module(nebserver apiserver.cpp)
