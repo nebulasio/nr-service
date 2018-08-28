@@ -1,6 +1,9 @@
 #include "blockchain.h"
 #include "utils.h"
 
+DEFINE_int64(start_block, 0, "the start block height");
+DEFINE_int64(end_block, 1, "the end block height");
+
 typedef neb::nebulas::nebulas_transaction_db nebulas_transaction_db_t;
 typedef std::shared_ptr<nebulas_transaction_db_t> nebulas_transaction_db_ptr_t;
 typedef neb::account_db<neb::nebulas_db> nebulas_account_db_t;
@@ -31,12 +34,14 @@ void aql_query(const nebulas_transaction_db_ptr_t ptr) {
   }
 }
 
-void transaction_reader(const nebulas_transaction_db_ptr_t ptr) {
+void transaction_reader(const nebulas_transaction_db_ptr_t ptr,
+                        neb::block_height_t start_block,
+                        neb::block_height_t end_block) {
   // std::vector<neb::transaction_info_t> txs =
   // ptr->read_transaction_simplified_from_db_with_duration(320010, 320020);
   std::vector<neb::transaction_info_t> txs =
-      ptr->read_success_and_failed_transaction_from_db_with_duration(320010,
-                                                                     320020);
+      ptr->read_success_and_failed_transaction_from_db_with_duration(
+          start_block, end_block);
   for (auto it = txs.begin(); it != txs.end(); it++) {
     int32_t status = it->template get<::neb::status>();
     std::string from = it->template get<::neb::from>();
@@ -70,9 +75,14 @@ int main(int argc, char *argv[]) {
   std::shared_ptr<::arangodb::fuerte::Connection> conn_ptr =
       tx_ptr->db_connection_ptr();
 
-  nebulas_account_db_t adb(STR(DB_URL), STR(DB_USER_NAME), STR(DB_PASSWORD),
-                           STR(NEBULAS_DB));
-  nebulas_account_db_ptr_t ac_ptr = std::make_shared<nebulas_account_db_t>(adb);
-  account_reader(ac_ptr);
+  gflags::ParseCommandLineFlags(&argc, &argv, true);
+  neb::block_height_t start_block = FLAGS_start_block;
+  neb::block_height_t end_block = FLAGS_end_block;
+  transaction_reader(tx_ptr, start_block, end_block);
+
+  // nebulas_account_db_t adb(STR(DB_URL), STR(DB_USER_NAME), STR(DB_PASSWORD),
+  // STR(NEBULAS_DB));
+  // nebulas_account_db_ptr_t ac_ptr =
+  // std::make_shared<nebulas_account_db_t>(adb); account_reader(ac_ptr);
   return 0;
 }
