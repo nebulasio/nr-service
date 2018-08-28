@@ -36,6 +36,7 @@ endif()
 # settings on Windows
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 
+add_subdirectory(pybind11)
 # Add googletest directly to our build. This defines
 # the gtest and gtest_main targets.
 add_subdirectory(${CMAKE_BINARY_DIR}/googletest-src
@@ -70,6 +71,7 @@ link_directories(${PROJECT_BINARY_DIR})
 link_directories(/usr/local/lib)
 
 add_subdirectory(src)
+add_subdirectory(apiserver)
 enable_testing()
 
 set(common_libs tga_engine fuerte velocypack boost_system boost_thread pthread curl ssl crypto mysqlcppconn boost_date_time glog)
