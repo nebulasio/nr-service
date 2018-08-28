@@ -1,4 +1,4 @@
-#!/usr/local/bin/pydoc2.7
+#!/usr/local/bin/python2.7
 '''
 Author: Chenmin Wang
 Date: 2018/08/13

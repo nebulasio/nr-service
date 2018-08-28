@@ -15,6 +15,8 @@ import db_reader
 app = Flask(__name__)
 api = Api(app)
 
+apiserver = nebserver.apiserver(__name__)
+
 
 @app.route('/nr')
 def api_nr():
