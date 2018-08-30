@@ -19,4 +19,5 @@ std::vector<std::string> split_by_comma(const std::string &str, char comma);
 void read_lines_from_file(const std::string &file,
                           std::vector<std::string> &lines);
 
+bool is_number(const std::string &s);
 } // namespace neb

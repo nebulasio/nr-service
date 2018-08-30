@@ -11,23 +11,19 @@ sys.path.append('../../cpp/build')
 from flask import Flask, url_for, request, json
 from flask_restful import Resource, Api
 
+import json
 import db_reader
 import nebserver
 
 app = Flask(__name__)
 api = Api(app)
 
-apiserver = nebserver.apiserver(__name__, 1024000)
+apiserver = nebserver.apiserver(__name__, 1 << 20)
 
 
 @app.route('/nr')
 def api_nr():
-    s = str()
-    if 'start_block' in request.args and 'end_block' in request.args:
-        start_block = int(request.args['start_block'])
-        end_block = int(request.args['end_block'])
-        s = apiserver.on_api_transaction(start_block, end_block)
-    return s
+    return apiserver.on_api_transaction(request.args.to_dict())
 
 
 @app.route('/hello')

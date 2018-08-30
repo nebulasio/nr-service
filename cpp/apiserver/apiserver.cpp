@@ -1,10 +1,9 @@
 #include "apiserver.h"
 #include "utils.h"
-#include <iostream>
 
 apiserver::apiserver(const std::string &appname, size_t cache_size)
     : m_appname(appname) {
-  m_cache_ptr = std::make_shared<cache_t>(cache_t(cache_size));
+  m_cache_ptr = std::make_unique<cache_t>(cache_t(cache_size));
   m_tx_ptr =
       std::make_shared<nebulas_transaction_db_t>(nebulas_transaction_db_t(
           STR(DB_URL), STR(DB_USER_NAME), STR(DB_PASSWORD), STR(NEBULAS_DB)));
@@ -40,8 +39,23 @@ void apiserver::set_cache(cache_t &cache, neb::block_height_t height) {
   }
 }
 
-std::string apiserver::on_api_transaction(int64_t start_block,
-                                          int64_t end_block) {
+std::string apiserver::on_api_transaction(
+    const std::unordered_map<std::string, std::string> &params) {
+
+  if (params.find("start_block") == params.end() ||
+      params.find("end_block") == params.end()) {
+    return std::string();
+  }
+
+  std::string s_start_block = params.find("start_block")->second;
+  std::string s_end_block = params.find("end_block")->second;
+  if (!neb::is_number(s_start_block) || !neb::is_number(s_end_block)) {
+    return std::string();
+  }
+
+  neb::block_height_t start_block = std::stoi(s_start_block);
+  neb::block_height_t end_block = std::stoi(s_end_block);
+
   cache_t &cache = *m_cache_ptr;
   std::vector<neb::transaction_info_t> txs;
 
@@ -51,9 +65,9 @@ std::string apiserver::on_api_transaction(int64_t start_block,
       LOG(INFO) << "cache missed, reading from db";
       set_cache(cache, h);
 
-      // if (!cache.get(h, rs)) {
-      // LOG(INFO) << "db missed";
-      //}
+      if (!cache.get(h, rs)) {
+        LOG(INFO) << "db missed";
+      }
     }
     txs.insert(txs.end(), rs.begin(), rs.end());
   }

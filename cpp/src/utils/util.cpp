@@ -45,6 +45,12 @@ void read_lines_from_file(const std::string &file,
   }
 }
 
+bool is_number(const std::string &s) {
+  return !s.empty() && std::find_if(s.begin(), s.end(), [](char ch) {
+                         return !std::isdigit(ch);
+                       }) == s.end();
+}
+
 /*
  * fill prefix zero to number at most $digit digits
  * */

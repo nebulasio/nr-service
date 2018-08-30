@@ -1,5 +1,5 @@
 
-add_library(tga_engine
+add_library(tga_engine SHARED
   graph/graph.cpp
   graph/algo.cpp
   utils/base58.cpp
