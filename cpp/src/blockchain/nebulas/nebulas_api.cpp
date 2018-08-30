@@ -131,8 +131,7 @@ json_parse_block_transactions(const std::string &json,
     std::string timestamp = block_timestamp;
     std::string gas_used = tx.get<std::string>("gas_used");
     std::string value = tx.get<std::string>("value");
-    // std::string data = tx.get<std::string>("data");
-    std::string data = std::string();
+    std::string data = tx.get<std::string>("data");
     std::string to = tx.get<std::string>("to");
     std::string contract_address = tx.get<std::string>("contract_address");
     std::string hash = tx.get<std::string>("hash");
