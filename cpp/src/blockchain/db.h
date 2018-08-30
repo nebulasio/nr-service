@@ -17,7 +17,7 @@ public:
      const std::string &passwd, const std::string &dbname)
       : m_dbname(dbname) {
     ::arangodb::fuerte::ConnectionBuilder conn_builder;
-    conn_builder.host(url);
+    conn_builder.endpoint(url);
     conn_builder.authenticationType(
         ::arangodb::fuerte::AuthenticationType::Basic);
     conn_builder.user(usrname);
