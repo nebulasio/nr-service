@@ -39,6 +39,8 @@ public:
   virtual std::vector<transaction_info_t>
   read_success_and_failed_transaction_from_db_with_duration(
       block_height_t start_block, block_height_t end_block) = 0;
+  std::string read_transaction_string(block_height_t start_block,
+                                      block_height_t end_block);
 };
 
 template <typename DB>
@@ -77,6 +79,57 @@ public:
         start_block % end_block);
     auto resp_ptr = this->aql_query(aql);
     return parse_from_response(std::move(resp_ptr));
+  }
+
+  std::string read_transaction_string(block_height_t start_block,
+                                      block_height_t end_block) {
+    std::vector<transaction_info_t> &rs =
+        read_success_and_failed_transaction_from_db_with_duration(start_block,
+                                                                  end_block);
+    return to_string(rs);
+  }
+
+  std::string to_string(const std::vector<transaction_info_t> &rs) {
+    boost::property_tree::ptree root;
+    boost::property_tree::ptree arr;
+
+    for (auto it = rs.begin(); it != rs.end(); it++) {
+      const transaction_info_t &info = *it;
+      int64_t status = info.template get<::neb::status>();
+      std::string from = info.template get<::neb::from>();
+      std::string to = info.template get<::neb::to>();
+      std::string tx_value = info.template get<::neb::tx_value>();
+      int64_t height = info.template get<::neb::height>();
+      std::string timestamp = info.template get<::neb::timestamp>();
+      std::string type_from = info.template get<::neb::type_from>();
+      std::string type_to = info.template get<::neb::type_to>();
+      std::string gas_used = info.template get<::neb::gas_used>();
+      std::string gas_price = info.template get<::neb::gas_price>();
+      std::string contract_address =
+          info.template get<::neb::contract_address>();
+
+      std::unordered_map<std::string, std::string> kv_pair(
+          {{"status", std::to_string(status)},
+           {"from", from},
+           {"to", to},
+           {"tx_value", tx_value},
+           {"height", std::to_string(height)},
+           {"timestamp", timestamp},
+           {"type_from", type_from},
+           {"type_to", type_to},
+           {"gas_used", gas_used},
+           {"gas_price", gas_price},
+           {"contract_address", contract_address}});
+
+      boost::property_tree::ptree p;
+      for (auto &ele : kv_pair) {
+        p.put(ele.first, ele.second);
+      }
+
+      arr.push_back(std::make_pair(std::string(), p));
+    }
+    root.add_child("transactions", arr);
+    return ptree_to_string(root);
   }
 
 private:
@@ -131,6 +184,12 @@ private:
       rs.push_back(info);
     }
     return rs;
+  }
+
+  std::string ptree_to_string(const boost::property_tree::ptree &root) {
+    std::stringstream ss;
+    write_json(ss, root, false);
+    return ss.str();
   }
 
 }; // end class transaction_db
