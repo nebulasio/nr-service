@@ -1,5 +1,5 @@
+#include "lru_cache.h"
 #include "blockchain.h"
-#include "cache.h"
 #include "utils.h"
 
 DEFINE_int64(start_block, 0, "the start block height");
@@ -36,8 +36,8 @@ void set_cache(neb::lru_cache<neb::block_height_t,
       std::make_shared<nebulas_transaction_db_t>(tdb);
 
   std::vector<neb::transaction_info_t> txs =
-      tx_ptr->read_success_and_failed_transaction_from_db_with_duration(
-          height, height + 3600 / 15);
+      tx_ptr->read_success_and_failed_transaction_from_db_with_duration(height,
+                                                                        height);
   LOG(INFO) << "read ahead transaction size: " << txs.size();
   std::unordered_map<neb::block_height_t, std::vector<neb::transaction_info_t>>
       height_and_txs;
@@ -75,7 +75,7 @@ void transaction_cache(int32_t cache_size) {
     for (neb::block_height_t h = start_block; h <= end_block; h++) {
       std::vector<neb::transaction_info_t> rs;
       if (!cache.get(h, rs)) {
-        LOG(INFO) << "cache missed, reading from db";
+        LOG(INFO) << "cache missed, reading from db, height:" << h;
         set_cache(cache, h);
 
         if (!cache.get(h, rs)) {

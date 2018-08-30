@@ -13,7 +13,14 @@ public:
   key_value_pair_t(const K &k, const V &v) : m_key(k), m_value(v) {}
 };
 
-template <class Key, class Value, class Lock = std::mutex,
+class null_lock {
+public:
+  void lock() {}
+  void unlock() {}
+  bool try_lock() { return true; }
+};
+
+template <class Key, class Value, class Lock = null_lock,
           class Map = std::unordered_map<
               Key, typename std::list<key_value_pair_t<Key, Value>>::iterator>>
 class lru_cache {
@@ -24,6 +31,7 @@ public:
   typedef Lock lock_t;
   using guard_t = std::lock_guard<lock_t>;
 
+  lru_cache() {}
   explicit lru_cache(size_t size) : m_cache_max_size(size) {}
   virtual ~lru_cache() = default;
 
