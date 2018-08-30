@@ -36,6 +36,8 @@ endif()
 # settings on Windows
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 
+find_package( PythonInterp 2.7 REQUIRED )
+find_package( PythonLibs 2.7 REQUIRED )
 add_subdirectory(pybind11)
 # Add googletest directly to our build. This defines
 # the gtest and gtest_main targets.
@@ -71,10 +73,10 @@ link_directories(${PROJECT_BINARY_DIR})
 link_directories(/usr/local/lib)
 
 add_subdirectory(src)
-add_subdirectory(apiserver)
 enable_testing()
 
-set(common_libs tga_engine fuerte velocypack boost_system boost_thread pthread curl ssl crypto mysqlcppconn boost_date_time glog)
+set(common_libs tga_engine fuerte velocypack boost_system boost_thread pthread curl ssl crypto mysqlcppconn boost_date_time glog http_parser)
+add_subdirectory(apiserver)
 
 if(EXISTS "${PROJECT_SOURCE_DIR}/cmd/CMakeLists.txt")
   add_subdirectory(cmd)
