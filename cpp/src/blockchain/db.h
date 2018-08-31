@@ -43,6 +43,7 @@ public:
     VPackBuilder builder;
     builder.openObject();
     builder.add("query", VPackValue(aql));
+    builder.add("batchSize", VPackValue(0x7fffffff));
     builder.close();
     request->addVPack(builder.slice());
     return m_connection_ptr->sendRequest(std::move(request));
