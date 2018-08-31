@@ -18,11 +18,11 @@ import nebserver
 app = Flask(__name__)
 api = Api(app)
 
-apiserver = nebserver.apiserver(__name__, 1 << 20)
+transaction_apiserver = nebserver.transaction_apiserver(__name__, 1 << 20)
 
 
-@app.route('/nr')
-def api_nr():
+@app.route('/transaction')
+def api_transaction():
     return apiserver.on_api_transaction(request.args.to_dict())
 
 
