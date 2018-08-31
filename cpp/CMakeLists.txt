@@ -77,6 +77,7 @@ enable_testing()
 
 set(common_libs tga_engine fuerte velocypack boost_system boost_thread pthread curl ssl crypto mysqlcppconn boost_date_time glog http_parser)
 add_subdirectory(apiserver)
+add_subdirectory(test)
 
 if(EXISTS "${PROJECT_SOURCE_DIR}/cmd/CMakeLists.txt")
   add_subdirectory(cmd)
