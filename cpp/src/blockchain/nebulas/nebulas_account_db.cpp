@@ -60,8 +60,7 @@ void nebulas_account_db::set_coinbase_account() {
 block_height_t nebulas_account_db::get_max_height_from_db() {
 
   std::unique_ptr<::arangodb::fuerte::Response> resp_ptr =
-      aql_query("for h in account sort h.block_height desc limit 1 return "
-                "h.block_height");
+      aql_query("for h in account sort h.height desc limit 1 return h.height");
 
   auto height_doc = resp_ptr->slices().front().get("result");
   if (height_doc.isNone() || height_doc.isEmptyArray()) {
@@ -79,11 +78,11 @@ void nebulas_account_db::insert_document_to_collection(
   block_height_t height = info.template get<::neb::height>();
 
   const std::string aql = boost::str(
-      boost::format("upsert {_key:'%1%'}"
+      boost::format("upsert {_key:'%1%'} "
                     "insert {_key:'%1%', address:'%1%', "
-                    "balance:'%2%', type:'%3%', create_at:'%4', height:%5%}"
+                    "balance:'%2%', type:'%3%', create_at:'%4%', height:%5%} "
                     "update {address:'%1%', balance:'%2%', type:'%3%', "
-                    "create_at:'%4', height:%5%}") %
+                    "create_at:'%4%', height:%5%} in account") %
       address % balance % account_type % create_at % height);
   aql_query(aql);
 }
