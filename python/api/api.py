@@ -23,7 +23,7 @@ transaction_apiserver = nebserver.transaction_apiserver(__name__, 1 << 20)
 
 @app.route('/transaction')
 def api_transaction():
-    return apiserver.on_api_transaction(request.args.to_dict())
+    return transaction_apiserver.on_api_transaction(request.args.to_dict())
 
 
 @app.route('/hello')
