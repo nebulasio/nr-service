@@ -7,8 +7,9 @@ int main(int argc, char *argv[]) {
   typedef std::shared_ptr<nebulas_transaction_db_t>
       nebulas_transaction_db_ptr_t;
 
-  nebulas_transaction_db_t db(STR(DB_URL), STR(DB_USER_NAME), STR(DB_PASSWORD),
-                              STR(NEBULAS_DB));
+  nebulas_transaction_db_t db(
+      std::getenv("DB_URL"), std::getenv("DB_USER_NAME"),
+      std::getenv("DB_PASSWORD"), std::getenv("NEBULAS_DB"));
   nebulas_transaction_db_ptr_t ptr =
       std::make_shared<nebulas_transaction_db_t>(db);
 

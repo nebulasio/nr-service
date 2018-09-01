@@ -61,15 +61,18 @@ void transaction_reader(const nebulas_transaction_db_ptr_t ptr,
   }
 }
 
-void account_reader(const nebulas_account_db_ptr_t ac_ptr) {
-  ac_ptr->set_height_address_val(320010, 320020);
+void account_reader(const nebulas_account_db_ptr_t ac_ptr,
+                    neb::block_height_t start_block,
+                    neb::block_height_t end_block) {
+  ac_ptr->set_height_address_val(start_block, end_block);
   // double value = ac_ptr->get_normalized_value(100);
   // LOG(INFO) << value;
 }
 
 int main(int argc, char *argv[]) {
-  nebulas_transaction_db_t tdb(STR(DB_URL), STR(DB_USER_NAME), STR(DB_PASSWORD),
-                               STR(NEBULAS_DB));
+  nebulas_transaction_db_t tdb(
+      std::getenv("DB_URL"), std::getenv("DB_USER_NAME"),
+      std::getenv("DB_PASSWORD"), std::getenv("NEBULAS_DB"));
   nebulas_transaction_db_ptr_t tx_ptr =
       std::make_shared<nebulas_transaction_db_t>(tdb);
   std::shared_ptr<::arangodb::fuerte::Connection> conn_ptr =
@@ -80,9 +83,11 @@ int main(int argc, char *argv[]) {
   neb::block_height_t end_block = FLAGS_end_block;
   transaction_reader(tx_ptr, start_block, end_block);
 
-  // nebulas_account_db_t adb(STR(DB_URL), STR(DB_USER_NAME), STR(DB_PASSWORD),
-  // STR(NEBULAS_DB));
+  // nebulas_account_db_t adb(std::getenv("DB_URL"),
+  // std::getenv("DB_USER_NAME"), std::getenv("DB_PASSWORD"),
+  // std::getenv("NEBULAS_DB"));
   // nebulas_account_db_ptr_t ac_ptr =
-  // std::make_shared<nebulas_account_db_t>(adb); account_reader(ac_ptr);
+  // std::make_shared<nebulas_account_db_t>(adb); account_reader(ac_ptr,
+  // start_block, end_block);
   return 0;
 }

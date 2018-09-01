@@ -5,7 +5,8 @@ account_apiserver::account_apiserver(const std::string &appname,
     : apiserver(appname) {
   m_cache_ptr = std::make_unique<account_cache_t>(account_cache_t(cache_size));
   m_ac_ptr = std::make_shared<nebulas_account_db_t>(nebulas_account_db_t(
-      STR(DB_URL), STR(DB_USER_NAME), STR(DB_PASSWORD), STR(NEBULAS_DB)));
+      std::getenv("DB_URL"), std::getenv("DB_USER_NAME"),
+      std::getenv("DB_PASSWORD"), std::getenv("NEBULAS_DB")));
 }
 
 std::string account_apiserver::on_api_account(
