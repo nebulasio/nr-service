@@ -39,8 +39,9 @@ public:
   virtual std::vector<transaction_info_t>
   read_success_and_failed_transaction_from_db_with_duration(
       block_height_t start_block, block_height_t end_block) = 0;
-  std::string read_transaction_string(block_height_t start_block,
-                                      block_height_t end_block);
+  virtual std::vector<transaction_info_t>
+  read_success_and_failed_transaction_from_db_with_address(
+      const std::string &address) = 0;
 };
 
 template <typename DB>
@@ -81,12 +82,19 @@ public:
     return parse_from_response(std::move(resp_ptr));
   }
 
-  std::string read_transaction_string(block_height_t start_block,
-                                      block_height_t end_block) {
-    std::vector<transaction_info_t> &rs =
-        read_success_and_failed_transaction_from_db_with_duration(start_block,
-                                                                  end_block);
-    return to_string(rs);
+  virtual std::vector<transaction_info_t>
+  read_success_and_failed_transaction_from_db_with_address(
+      const std::string &address) {
+    const std::string aql = boost::str(
+        boost::format(
+            "for tx in transaction filter tx.from=='%1%' or tx.to=='%1%'"
+            "return {tx_id:tx.tx_id, status:tx.status, from:tx.from, to:tx.to, "
+            "tx_value:tx.tx_value, height:tx.height, timestamp:tx.timestamp, "
+            "type_from:tx.type_from, type_to:tx.type_to, gas_used:tx.gas_used, "
+            "gas_price:tx.gas_price, contract_address:tx.contract_address}") %
+        address);
+    auto resp_ptr = this->aql_query(aql);
+    return parse_from_response(std::move(resp_ptr));
   }
 
   std::string to_string(const std::vector<transaction_info_t> &rs) {
