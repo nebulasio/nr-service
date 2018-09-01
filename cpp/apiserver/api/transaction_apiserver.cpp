@@ -21,7 +21,7 @@ void transaction_apiserver::set_height_transaction_cache(
 
   int32_t read_ahead_height = 3600 / 15;
   std::vector<neb::transaction_info_t> txs =
-      m_tx_ptr->read_success_and_failed_transaction_from_db_with_duration(
+      m_tx_ptr->read_success_and_failed_transaction_from_db_with_block_duration(
           height, height + read_ahead_height);
   LOG(INFO) << "read ahead transaction size: " << txs.size();
   std::unordered_map<neb::block_height_t, std::vector<neb::transaction_info_t>>

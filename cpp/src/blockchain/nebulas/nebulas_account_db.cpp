@@ -91,8 +91,9 @@ void nebulas_account_db::append_account_to_db() {
   block_height_t last_height = get_max_height_from_db();
 
   std::vector<transaction_info_t> txs =
-      m_tdb_ptr->read_success_and_failed_transaction_from_db_with_duration(
-          last_height, std::numeric_limits<int64_t>::max());
+      m_tdb_ptr
+          ->read_success_and_failed_transaction_from_db_with_block_duration(
+              last_height, std::numeric_limits<int64_t>::max());
 
   std::vector<account_info_t> account_info_list = read_account_from_db();
   std::unordered_map<account_address_t, account_info_t>

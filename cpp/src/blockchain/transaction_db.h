@@ -37,8 +37,11 @@ public:
   read_transaction_simplified_from_db_with_duration(
       block_height_t start_block, block_height_t end_block) = 0;
   virtual std::vector<transaction_info_t>
-  read_success_and_failed_transaction_from_db_with_duration(
+  read_success_and_failed_transaction_from_db_with_block_duration(
       block_height_t start_block, block_height_t end_block) = 0;
+  virtual std::vector<transaction_info_t>
+  read_success_and_failed_transaction_from_db_with_ts_duration(
+      const std::string &start_ts, const std::string &end_ts) = 0;
   virtual std::vector<transaction_info_t>
   read_success_and_failed_transaction_from_db_with_address(
       const std::string &address) = 0;
@@ -68,7 +71,7 @@ public:
   }
 
   virtual std::vector<transaction_info_t>
-  read_success_and_failed_transaction_from_db_with_duration(
+  read_success_and_failed_transaction_from_db_with_block_duration(
       block_height_t start_block, block_height_t end_block) {
     const std::string aql = boost::str(
         boost::format(
@@ -78,6 +81,22 @@ public:
             "type_from:tx.type_from, type_to:tx.type_to, gas_used:tx.gas_used, "
             "gas_price:tx.gas_price, contract_address:tx.contract_address}") %
         start_block % end_block);
+    auto resp_ptr = this->aql_query(aql);
+    return parse_from_response(std::move(resp_ptr));
+  }
+
+  virtual std::vector<transaction_info_t>
+  read_success_and_failed_transaction_from_db_with_ts_duration(
+      const std::string &start_ts, const std::string &end_ts) {
+    const std::string aql = boost::str(
+        boost::format(
+            "for tx in transaction filter tx.timestamp>='%1%' and "
+            "tx.timestamp<='%2%' return {tx_id:tx.tx_id, status:tx.status, "
+            "from:tx.from, to:tx.to, tx_value:tx.tx_value, height:tx.height, "
+            "timestamp:tx.timestamp, type_from:tx.type_from, "
+            "type_to:tx.type_to, gas_used:tx.gas_used, gas_price:tx.gas_price, "
+            "contract_address:tx.contract_address}") %
+        start_ts % end_ts);
     auto resp_ptr = this->aql_query(aql);
     return parse_from_response(std::move(resp_ptr));
   }

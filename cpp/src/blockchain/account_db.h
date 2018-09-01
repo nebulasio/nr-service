@@ -134,8 +134,9 @@ public:
   virtual void set_height_address_val(int64_t start_block, int64_t end_block) {
     LOG(INFO) << "template account_db, init height address value begin";
     std::vector<transaction_info_t> txs =
-        m_tdb_ptr->read_success_and_failed_transaction_from_db_with_duration(
-            start_block, end_block);
+        m_tdb_ptr
+            ->read_success_and_failed_transaction_from_db_with_block_duration(
+                start_block, end_block);
     LOG(INFO) << "template account_db, read transaction done";
     std::unordered_map<account_address_t, account_balance_t> addr_balance;
 

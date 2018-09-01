@@ -4,8 +4,9 @@
 #include <gtest/gtest.h>
 
 TEST(test_nebulas_account_db, test_append_account_to_db_full) {
-  nebulas_account_db_t na_db(STR(DB_URL), STR(DB_USER_NAME), STR(DB_PASSWORD),
-                             STR(NEBULAS_DB));
+  nebulas_account_db_t na_db(std::getenv("DB_URL"), std::getenv("DB_USER_NAME"),
+                             std::getenv("DB_PASSWORD"),
+                             std::getenv("NEBULAS_DB"));
   account_ptr_t account_db_ptr = std::make_shared<nebulas_account_db_t>(na_db);
 
   std::vector<neb::account_info_t> rs = account_db_ptr->read_account_from_db();

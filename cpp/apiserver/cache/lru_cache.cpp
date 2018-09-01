@@ -30,14 +30,15 @@ typedef std::shared_ptr<nebulas_transaction_db_t> nebulas_transaction_db_ptr_t;
 void set_cache(neb::lru_cache<neb::block_height_t,
                               std::vector<neb::transaction_info_t>> &cache,
                neb::block_height_t height) {
-  nebulas_transaction_db_t tdb(STR(DB_URL), STR(DB_USER_NAME), STR(DB_PASSWORD),
-                               STR(NEBULAS_DB));
+  nebulas_transaction_db_t tdb(
+      std::getenv("DB_URL"), std::getenv("DB_USER_NAME"),
+      std::getenv("DB_PASSWORD"), std::getenv("NEBULAS_DB"));
   nebulas_transaction_db_ptr_t tx_ptr =
       std::make_shared<nebulas_transaction_db_t>(tdb);
 
   std::vector<neb::transaction_info_t> txs =
-      tx_ptr->read_success_and_failed_transaction_from_db_with_duration(height,
-                                                                        height);
+      tx_ptr->read_success_and_failed_transaction_from_db_with_block_duration(
+          height, height);
   LOG(INFO) << "read ahead transaction size: " << txs.size();
   std::unordered_map<neb::block_height_t, std::vector<neb::transaction_info_t>>
       height_and_txs;
