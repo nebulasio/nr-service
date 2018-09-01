@@ -88,14 +88,31 @@ int32_t is_contract_address(const std::string &address) {
    */
   bool ret = decode_base58(address, v);
 
-  if (!ret || v.size() < 2) {
+  if (!ret) {
+    // decode failed
     return -1;
   }
 
-  if (v[1] == 0x57) {
-    return 0;
+  if (v.size() < 2) {
+    // must at least padding and type code
+    return -1;
   }
-  return 1;
+
+  if (address.length() != 35) {
+    // address has 35 chars
+    return -1;
+  }
+
+  if (v[0] != 0x19) {
+    // one byte fixed padding
+    return -1;
+  }
+
+  if (v[1] != 0x57 && v[1] != 0x58) {
+    // one byte type code
+    return -1;
+  }
+  return v[1] == 0x57 ? 0 : 1;
 }
 
 std::vector<transaction_info_t>

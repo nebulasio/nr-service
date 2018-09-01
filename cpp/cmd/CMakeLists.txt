@@ -17,3 +17,6 @@ target_link_libraries(account_writer ${common_libs} gflags)
 add_executable(nr nr.cpp)
 target_link_libraries(nr ${common_libs} gflags)
 
+add_executable(base58 base58.cpp)
+target_link_libraries(base58 ${common_libs} gflags)
+
