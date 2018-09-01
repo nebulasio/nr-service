@@ -174,6 +174,10 @@ private:
       const std::unique_ptr<::arangodb::fuerte::Response> resp_ptr) {
     std::vector<transaction_info_t> rs;
     auto documents = resp_ptr->slices().front().get("result");
+    if (documents.isNone() || documents.isEmptyArray()) {
+      return rs;
+    }
+
     for (size_t i = 0; i < documents.length(); i++) {
       auto doc = documents.at(i);
       transaction_info_t info;
