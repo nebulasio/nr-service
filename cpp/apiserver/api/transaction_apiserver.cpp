@@ -58,15 +58,16 @@ std::string transaction_apiserver::on_api_transaction(
   for (neb::block_height_t h = start_block; h <= end_block; h++) {
     std::vector<neb::transaction_info_t> rs;
     if (!cache.get(h, rs)) {
-      LOG(INFO) << "cache missed, reading from db";
+      LOG(INFO) << "transaction cache missed, reading from db";
       set_transaction_cache(cache, h);
 
       if (!cache.get(h, rs)) {
-        LOG(INFO) << "db missed";
+        LOG(INFO) << "transaction db missed";
       }
     }
     txs.insert(txs.end(), rs.begin(), rs.end());
   }
   LOG(INFO) << "transaction size: " << txs.size();
-  return m_tx_ptr->to_string(txs);
+
+  return txs.empty() ? std::string() : m_tx_ptr->to_string(txs);
 }

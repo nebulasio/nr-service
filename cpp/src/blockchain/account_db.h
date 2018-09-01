@@ -32,6 +32,8 @@ template <> struct account_db_traits<eth_db> {
 class account_db_interface {
 public:
   virtual std::vector<account_info_t> read_account_from_db() = 0;
+  virtual std::vector<account_info_t>
+  read_account_by_address(const std::string &address) = 0;
   virtual account_balance_t get_account_balance(block_height_t height,
                                                 const std::string &address) = 0;
   virtual double get_normalized_value(double value) = 0;
@@ -54,6 +56,46 @@ public:
     const std::string aql = "for record in account return record";
     auto resp_ptr = this->aql_query(aql);
     return parse_from_response(std::move(resp_ptr));
+  }
+
+  virtual std::vector<account_info_t>
+  read_account_by_address(const std::string &address) {
+    const std::string aql =
+        boost::str(boost::format("for record in account filter "
+                                 "record.address=='%1%' return record") %
+                   address);
+    auto resp_ptr = this->aql_query(aql);
+    return parse_from_response(std::move(resp_ptr));
+  }
+
+  std::string to_string(const std::vector<account_info_t> &rs) {
+    boost::property_tree::ptree root;
+    boost::property_tree::ptree arr;
+
+    for (auto it = rs.begin(); it != rs.end(); it++) {
+      const account_info_t &info = *it;
+      std::string address = info.template get<::neb::address>();
+      std::string balance = info.template get<::neb::balance>();
+      std::string account_type = info.template get<::neb::account_type>();
+      std::string create_at = info.template get<::neb::create_at>();
+      int64_t height = info.template get<::neb::height>();
+
+      std::unordered_map<std::string, std::string> kv_pair(
+          {{"address", address},
+           {"balance", balance},
+           {"type", account_type},
+           {"create_at", create_at},
+           {"height", std::to_string(height)}});
+
+      boost::property_tree::ptree p;
+      for (auto &ele : kv_pair) {
+        p.put(ele.first, ele.second);
+      }
+
+      arr.push_back(std::make_pair(std::string(), p));
+    }
+    root.add_child("accounts", arr);
+    return ptree_to_string(root);
   }
 
   virtual account_balance_t get_account_balance(block_height_t height,
@@ -182,7 +224,7 @@ private:
     if (key.compare("height") == 0) {
       info.template set<::neb::height>(slice.getInt());
     }
-    if (key.compare("account_type") == 0) {
+    if (key.compare("type") == 0) {
       info.template set<::neb::account_type>(slice.copyString());
     }
     if (key.compare("create_at") == 0) {
@@ -195,6 +237,10 @@ private:
     std::vector<account_info_t> rs;
 
     auto documents = resp_ptr->slices().front().get("result");
+    if (documents.isNone() || documents.isEmptyArray()) {
+      return rs;
+    }
+
     for (size_t i = 0; i < documents.length(); i++) {
       auto doc = documents.at(i);
       account_info_t info;
@@ -205,6 +251,12 @@ private:
       rs.push_back(info);
     }
     return rs;
+  }
+
+  std::string ptree_to_string(const boost::property_tree::ptree &root) {
+    std::stringstream ss;
+    write_json(ss, root, false);
+    return ss.str();
   }
 
 protected:

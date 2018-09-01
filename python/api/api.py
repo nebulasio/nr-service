@@ -19,11 +19,17 @@ app = Flask(__name__)
 api = Api(app)
 
 transaction_apiserver = nebserver.transaction_apiserver(__name__, 1 << 20)
+account_apiserver = nebserver.account_apiserver(__name__, 1 << 20)
 
 
 @app.route('/transaction')
 def api_transaction():
     return transaction_apiserver.on_api_transaction(request.args.to_dict())
+
+
+@app.route('/account')
+def api_account():
+    return account_apiserver.on_api_account(request.args.to_dict())
 
 
 @app.route('/hello')
