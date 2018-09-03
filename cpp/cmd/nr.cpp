@@ -42,11 +42,12 @@ void nebulas_service(neb::block_height_t start_block,
 
 void nebulas_rank_detail(const neb_tdb_ptr_t tdb_ptr,
                          const neb_adb_ptr_t adb_ptr,
-                         const neb_ndb_ptr_t ndb_ptr,
+                         const neb_ndb_ptr_t ndb_ptr, const std::string &date,
                          neb::block_height_t start_block,
                          neb::block_height_t end_block) {
   auto txs = tdb_ptr->read_transaction_simplified_from_db_with_duration(
       start_block, end_block);
+  LOG(INFO) << "start block: " << start_block << " , end block: " << end_block;
   LOG(INFO) << "transaction size: " << txs.size();
   neb::rank_params_t rp{2000.0, 200000.0, 100.0, 1000.0, 0.75, 3.14};
   neb::nebulas_rank nr(tdb_ptr, adb_ptr, rp, start_block, end_block);
@@ -54,12 +55,13 @@ void nebulas_rank_detail(const neb_tdb_ptr_t tdb_ptr,
   // account inter transactions
   std::vector<neb::transaction_info_t> account_inter_txs;
   for (auto it = txs.begin(); it != txs.end(); it++) {
-    std::string from = it->template get<::neb::from>();
-    std::string to = it->template get<::neb::to>();
-    if (from.compare("normal") == 0 && to.compare("normal") == 0) {
+    std::string type_from = it->template get<::neb::type_from>();
+    std::string type_to = it->template get<::neb::type_to>();
+    if (type_from.compare("normal") == 0 && type_to.compare("normal") == 0) {
       account_inter_txs.push_back(*it);
     }
   }
+  LOG(INFO) << "account to account: " << account_inter_txs.size();
 
   // graph
   std::vector<std::vector<neb::transaction_info_t>> txs_v =
@@ -67,6 +69,7 @@ void nebulas_rank_detail(const neb_tdb_ptr_t tdb_ptr,
   nr.filter_empty_transactions_this_interval(txs_v);
   std::vector<neb::transaction_graph_ptr> tgs =
       nr.build_transaction_graphs(txs_v);
+  LOG(INFO) << "we have " << tgs.size() << " subgraphs.";
   for (auto it = tgs.begin(); it != tgs.end(); it++) {
     neb::transaction_graph_ptr ptr = *it;
     neb::remove_cycles_based_on_time_sequence(ptr->internal_graph());
@@ -78,10 +81,12 @@ void nebulas_rank_detail(const neb_tdb_ptr_t tdb_ptr,
   neb::merge_topk_edges_with_same_from_and_same_to(tg->internal_graph());
   LOG(INFO) << "done with merge graphs.";
 
+  // median
   std::unordered_set<std::string> accounts = nr.get_normal_accounts(txs);
   std::unordered_map<std::string, double> account_median =
       nr.get_account_balance_median(accounts, txs_v, adb_ptr);
 
+  // degree and in_out amount
   std::unordered_map<std::string, neb::in_out_degree> in_out_degrees =
       neb::get_in_out_degrees(tg->internal_graph());
   std::unordered_map<std::string, int> degrees =
@@ -91,6 +96,7 @@ void nebulas_rank_detail(const neb_tdb_ptr_t tdb_ptr,
   std::unordered_map<std::string, double> stakes =
       neb::get_stakes(tg->internal_graph());
 
+  // weight and rank
   std::unordered_map<std::string, double> account_weight =
       nr.get_account_weight(in_out_vals, adb_ptr);
   std::unordered_map<std::string, double> account_rank =
@@ -109,21 +115,28 @@ void nebulas_rank_detail(const neb_tdb_ptr_t tdb_ptr,
       continue;
     }
 
-    LOG(INFO) << addr << ',' << account_median[addr] << ','
-              << account_rank[addr] << ',' << in_out_degrees[addr].in_degree
-              << ',' << in_out_degrees[addr].out_degree << ',' << degrees[addr]
-              << ',' << in_out_vals[addr].in_val << ','
-              << in_out_vals[addr].out_val << ',' << stakes[addr];
+    neb::nebulas::nas nas_in_val = neb::nebulas::nas_cast<neb::nebulas::nas>(
+        neb::nebulas::wei(in_out_vals.find(addr)->second.in_val));
+    neb::nebulas::nas nas_out_val = neb::nebulas::nas_cast<neb::nebulas::nas>(
+        neb::nebulas::wei(in_out_vals.find(addr)->second.out_val));
+    neb::nebulas::nas nas_stake = neb::nebulas::nas_cast<neb::nebulas::nas>(
+        neb::nebulas::wei(stakes.find(addr)->second));
+
+    // LOG(INFO) << addr << ',' << account_median[addr] << ','
+    //<< account_rank[addr] << ',' << in_out_degrees[addr].in_degree
+    //<< ',' << in_out_degrees[addr].out_degree << ',' << degrees[addr]
+    //<< ',' << nas_in_val.value() << ',' << nas_out_val.value() << ','
+    //<< nas_stake.value();
 
     neb::nr_info_t info;
-    info.template set<::neb::address, ::neb::median, ::neb::weight,
+    info.template set<::neb::date, ::neb::address, ::neb::median, ::neb::weight,
                       ::neb::score, ::neb::in_degree, ::neb::out_degree,
                       ::neb::degrees, ::neb::in_val, ::neb::out_val,
                       ::neb::in_outs>(
-        addr, account_median[addr], account_weight[addr], account_rank[addr],
-        in_out_degrees[addr].in_degree, in_out_degrees[addr].out_degree,
-        degrees[addr], in_out_vals[addr].in_val, in_out_vals[addr].out_val,
-        stakes[addr]);
+        date, addr, account_median[addr], account_weight[addr],
+        account_rank[addr], in_out_degrees[addr].in_degree,
+        in_out_degrees[addr].out_degree, degrees[addr], nas_in_val.value(),
+        nas_out_val.value(), nas_stake.value());
     ndb_ptr->insert_document_to_collection(info);
   }
 }
@@ -170,7 +183,8 @@ void write_to_nebulas_rank_db() {
   neb::block_height_t start_block =
       txs_in_start_last_minute.back().template get<::neb::height>();
 
-  nebulas_rank_detail(tdb_ptr, adb_ptr, ndb_ptr, start_block, end_block);
+  std::string date = neb::time_t_to_date(start_ts);
+  nebulas_rank_detail(tdb_ptr, adb_ptr, ndb_ptr, date, start_block, end_block);
   return;
 }
 

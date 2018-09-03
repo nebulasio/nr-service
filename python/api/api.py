@@ -20,6 +20,7 @@ api = Api(app)
 
 transaction_apiserver = nebserver.transaction_apiserver(__name__, 1 << 20)
 account_apiserver = nebserver.account_apiserver(__name__, 1 << 20)
+nr_apiserver = nebserver.nr_apiserver(__name__, 1 << 20)
 
 
 @app.route('/transaction')
@@ -30,6 +31,11 @@ def api_transaction():
 @app.route('/account')
 def api_account():
     return account_apiserver.on_api_account(request.args.to_dict())
+
+
+@app.route('/nr')
+def api_nr():
+    return nr_apiserver.on_api_nr(request.args.to_dict())
 
 
 @app.route('/hello')

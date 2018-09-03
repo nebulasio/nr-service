@@ -2,6 +2,7 @@
 #include <pybind11/stl.h>
 
 #include "api/account_apiserver.h"
+#include "api/nr_apiserver.h"
 #include "api/transaction_apiserver.h"
 #include "apiserver.h"
 
@@ -17,4 +18,8 @@ PYBIND11_MODULE(nebserver, m) {
   pybind11::class_<account_apiserver>(m, "account_apiserver")
       .def(pybind11::init<const std::string &, int32_t>())
       .def("on_api_account", &account_apiserver::on_api_account);
+
+  pybind11::class_<nr_apiserver>(m, "nr_apiserver")
+      .def(pybind11::init<const std::string &, int32_t>())
+      .def("on_api_nr", &nr_apiserver::on_api_nr);
 }

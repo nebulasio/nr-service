@@ -22,4 +22,5 @@ void read_lines_from_file(const std::string &file,
 bool is_number(const std::string &s);
 
 time_t get_universal_timestamp();
+std::string time_t_to_date(time_t t);
 } // namespace neb
