@@ -145,8 +145,11 @@ public:
       std::string to = it->template get<::neb::to>();
 
       int64_t height = it->template get<::neb::height>();
-      account_balance_t value = boost::lexical_cast<account_balance_t>(
-          it->template get<::neb::tx_value>());
+      std::string tx_value = it->template get<::neb::tx_value>();
+      account_balance_t value =
+          tx_value.compare(std::string()) == 0
+              ? 0
+              : boost::lexical_cast<account_balance_t>(tx_value);
 
       if (addr_balance.find(from) == addr_balance.end()) {
         addr_balance.insert(std::make_pair(from, 0));
