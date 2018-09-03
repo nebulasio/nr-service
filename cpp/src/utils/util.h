@@ -20,4 +20,6 @@ void read_lines_from_file(const std::string &file,
                           std::vector<std::string> &lines);
 
 bool is_number(const std::string &s);
+
+time_t get_universal_timestamp();
 } // namespace neb
