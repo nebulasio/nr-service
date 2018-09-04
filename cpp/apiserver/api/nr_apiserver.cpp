@@ -1,4 +1,5 @@
 #include "nr_apiserver.h"
+#include "err/err_def.h"
 
 nr_apiserver::nr_apiserver(const std::string &appname, size_t cache_size)
     : apiserver(appname) {
@@ -11,11 +12,11 @@ nr_apiserver::nr_apiserver(const std::string &appname, size_t cache_size)
 std::string nr_apiserver::on_api_nr(
     const std::unordered_map<std::string, std::string> &params) {
   if (params.find("date") == params.end()) {
-    return std::string();
+    return err_code_params_not_matched;
   }
   std::string date = params.find("date")->second;
   if (!neb::is_number(date)) {
-    return std::string();
+    return err_code_params_type_invalid;
   }
 
   nr_cache_t &cache = *m_cache_ptr;
@@ -27,10 +28,9 @@ std::string nr_apiserver::on_api_nr(
 
     if (!cache.get(date, rs)) {
       LOG(INFO) << "nr db missed";
-      return std::string();
     }
   }
-  return rs.empty() ? std::string() : m_nr_ptr->to_string(rs);
+  return m_nr_ptr->to_string(rs);
 }
 
 void nr_apiserver::set_nr_cache(nr_cache_t &cache, const std::string &date) {

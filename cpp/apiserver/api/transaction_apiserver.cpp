@@ -1,4 +1,5 @@
 #include "transaction_apiserver.h"
+#include "err/err_def.h"
 
 transaction_apiserver::transaction_apiserver(const std::string &appname,
                                              size_t cache_size)
@@ -47,13 +48,13 @@ std::string transaction_apiserver::on_api_height_transaction(
 
   if (params.find("start_block") == params.end() ||
       params.find("end_block") == params.end()) {
-    return std::string();
+    return err_code_params_not_matched;
   }
 
   std::string s_start_block = params.find("start_block")->second;
   std::string s_end_block = params.find("end_block")->second;
   if (!neb::is_number(s_start_block) || !neb::is_number(s_end_block)) {
-    return std::string();
+    return err_code_params_type_invalid;
   }
 
   neb::block_height_t start_block = std::stoi(s_start_block);
@@ -76,7 +77,7 @@ std::string transaction_apiserver::on_api_height_transaction(
   }
   LOG(INFO) << "transaction size: " << txs.size();
 
-  return txs.empty() ? std::string() : m_tx_ptr->to_string(txs);
+  return m_tx_ptr->to_string(txs);
 }
 
 void transaction_apiserver::set_address_transaction_cache(
@@ -92,11 +93,11 @@ void transaction_apiserver::set_address_transaction_cache(
 std::string transaction_apiserver::on_api_address_transaction(
     const std::unordered_map<std::string, std::string> &params) {
   if (params.find("address") == params.end()) {
-    return std::string();
+    return err_code_params_not_matched;
   }
   std::string address = params.find("address")->second;
   if (neb::nebulas::is_contract_address(address) < 0) {
-    return std::string();
+    return err_code_params_type_invalid;
   }
 
   address_transaction_cache_t &cache = *m_address_transaction_cache_ptr;
@@ -111,7 +112,7 @@ std::string transaction_apiserver::on_api_address_transaction(
   }
   LOG(INFO) << "transaction size: " << rs.size();
 
-  return rs.empty() ? std::string() : m_tx_ptr->to_string(rs);
+  return m_tx_ptr->to_string(rs);
 }
 
 bool transaction_apiserver::has_keys_in_params(
@@ -136,6 +137,6 @@ std::string transaction_apiserver::on_api_transaction(
                          params)) {
     return on_api_address_transaction(params);
   }
-  return std::string();
+  return err_code_params_not_matched;
 }
 

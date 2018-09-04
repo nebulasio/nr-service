@@ -1,4 +1,5 @@
 #include "account_apiserver.h"
+#include "err/err_def.h"
 
 account_apiserver::account_apiserver(const std::string &appname,
                                      size_t cache_size)
@@ -12,25 +13,29 @@ account_apiserver::account_apiserver(const std::string &appname,
 std::string account_apiserver::on_api_account(
     const std::unordered_map<std::string, std::string> &params) {
   if (params.find("address") == params.end()) {
-    return std::string();
+    return err_code_params_not_matched;
   }
   std::string address = params.find("address")->second;
   if (neb::nebulas::is_contract_address(address) < 0) {
-    return std::string();
+    return err_code_params_type_invalid;
   }
 
   account_cache_t &cache = *m_cache_ptr;
   neb::account_info_t info;
+  std::vector<neb::account_info_t> rs;
+
   if (!cache.get(address, info)) {
     LOG(INFO) << "account cache missed, reading from db";
     set_account_cache(cache, address);
 
     if (!cache.get(address, info)) {
       LOG(INFO) << "account db missed";
-      return std::string();
+      return m_ac_ptr->to_string(rs);
     }
   }
-  return m_ac_ptr->to_string(std::vector<neb::account_info_t>({info}));
+
+  rs.push_back(info);
+  return m_ac_ptr->to_string(rs);
 }
 
 void account_apiserver::set_account_cache(account_cache_t &cache,

@@ -6,7 +6,7 @@ pybind11_add_module(nebserver
   api/transaction_apiserver.cpp
   api/account_apiserver.cpp
   api/nr_apiserver.cpp)
-target_link_libraries(nebserver PRIVATE ${common_libs})
+target_link_libraries(nebserver PRIVATE ${common_libs} gflags)
 
 add_executable(lru_cache cache/lru_cache.cpp)
 target_link_libraries(lru_cache ${common_libs} gflags)
