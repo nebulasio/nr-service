@@ -220,6 +220,7 @@ private:
   std::string ptree_to_string(const boost::property_tree::ptree &root) {
     std::stringstream ss;
     write_json(ss, root, false);
+    LOG(INFO) << "write json: " << ss.str();
     return ss.str();
   }
 

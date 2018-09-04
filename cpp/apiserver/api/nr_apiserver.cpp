@@ -11,12 +11,21 @@ nr_apiserver::nr_apiserver(const std::string &appname, size_t cache_size)
 
 std::string nr_apiserver::on_api_nr(
     const std::unordered_map<std::string, std::string> &params) {
+
+  LOG(INFO) << "on api nr, request params";
+  for (auto it = params.begin(); it != params.end(); it++) {
+    LOG(INFO) << it->first << ',' << it->second;
+  }
+
   if (params.find("date") == params.end()) {
+    LOG(WARNING) << "params not matched, no param \'date\'";
     return err_code_params_not_matched;
   }
   std::string date = params.find("date")->second;
   if (!neb::is_number(date)) {
-    return err_code_params_type_invalid;
+    LOG(WARNING)
+        << "params value invalid, date value contains unexpected character";
+    return err_code_params_value_invalid;
   }
 
   nr_cache_t &cache = *m_cache_ptr;
@@ -35,6 +44,7 @@ std::string nr_apiserver::on_api_nr(
 
 void nr_apiserver::set_nr_cache(nr_cache_t &cache, const std::string &date) {
   std::vector<neb::nr_info_t> rs = m_nr_ptr->read_nr_by_date(date);
+  LOG(INFO) << "read nr by date, size: " << rs.size();
   cache.set(date, rs);
   return;
 }

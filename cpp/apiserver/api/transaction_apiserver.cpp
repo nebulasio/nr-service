@@ -46,15 +46,24 @@ void transaction_apiserver::set_height_transaction_cache(
 std::string transaction_apiserver::on_api_height_transaction(
     const std::unordered_map<std::string, std::string> &params) {
 
+  LOG(INFO) << "on api height transaction, request params";
+  for (auto it = params.begin(); it != params.end(); it++) {
+    LOG(INFO) << it->first << ',' << it->second;
+  }
+
   if (params.find("start_block") == params.end() ||
       params.find("end_block") == params.end()) {
+    LOG(WARNING)
+        << "params not matched, no param \'start_block\' or \'end_block\'";
     return err_code_params_not_matched;
   }
 
   std::string s_start_block = params.find("start_block")->second;
   std::string s_end_block = params.find("end_block")->second;
   if (!neb::is_number(s_start_block) || !neb::is_number(s_end_block)) {
-    return err_code_params_type_invalid;
+    LOG(WARNING) << "params value invalid, start_block/end_block value "
+                    "contains unexpected character";
+    return err_code_params_value_invalid;
   }
 
   neb::block_height_t start_block = std::stoi(s_start_block);
@@ -86,18 +95,29 @@ void transaction_apiserver::set_address_transaction_cache(
   std::vector<neb::transaction_info_t> rs =
       m_tx_ptr->read_success_and_failed_transaction_from_db_with_address(
           address);
+  LOG(INFO) << "read transaction by address, size: " << rs.size();
   cache.set(address, rs);
   return;
 }
 
 std::string transaction_apiserver::on_api_address_transaction(
     const std::unordered_map<std::string, std::string> &params) {
+
+  LOG(INFO) << "on api address transaction, request params";
+  for (auto it = params.begin(); it != params.end(); it++) {
+    LOG(INFO) << it->first << ',' << it->second;
+  }
+
   if (params.find("address") == params.end()) {
+    LOG(WARNING) << "params not matched, no param \'address\'";
     return err_code_params_not_matched;
   }
   std::string address = params.find("address")->second;
   if (neb::nebulas::is_contract_address(address) < 0) {
-    return err_code_params_type_invalid;
+    LOG(WARNING)
+        << "params value invalid, see nebulas address "
+           "design, https://github.com/nebulasio/wiki/blob/master/address.md";
+    return err_code_params_value_invalid;
   }
 
   address_transaction_cache_t &cache = *m_address_transaction_cache_ptr;
@@ -137,6 +157,8 @@ std::string transaction_apiserver::on_api_transaction(
                          params)) {
     return on_api_address_transaction(params);
   }
+  LOG(WARNING)
+      << "params not matched, no param \'start_block\' or \'end_block\'";
   return err_code_params_not_matched;
 }
 
