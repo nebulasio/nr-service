@@ -10,7 +10,7 @@ namespace neb {
 
 class db_interface {};
 
-template <typename DB> class db : public db_interface {
+template <typename DB, typename T> class db : public db_interface {
 public:
   db() {}
   db(const std::string &url, const std::string &usrname,
@@ -47,6 +47,38 @@ public:
     builder.close();
     request->addVPack(builder.slice());
     return m_connection_ptr->sendRequest(std::move(request));
+  }
+
+protected:
+  virtual void set_info(T &info, const VPackSlice &slice,
+                        const std::string &key) {}
+
+  void parse_from_response(
+      const std::unique_ptr<::arangodb::fuerte::Response> resp_ptr,
+      std::vector<T> &rs) {
+
+    auto documents = resp_ptr->slices().front().get("result");
+    if (documents.isNone() || documents.isEmptyArray()) {
+      return;
+    }
+
+    for (size_t i = 0; i < documents.length(); i++) {
+      auto doc = documents.at(i);
+      T info;
+      for (size_t j = 0; j < doc.length(); j++) {
+        std::string key = doc.keyAt(j).copyString();
+        set_info(info, doc.valueAt(j), key);
+      }
+      rs.push_back(info);
+    }
+    return;
+  }
+
+  std::string ptree_to_string(const boost::property_tree::ptree &root) {
+    std::stringstream ss;
+    write_json(ss, root, false);
+    LOG(INFO) << "write json: " << ss.str();
+    return ss.str();
   }
 
 protected:

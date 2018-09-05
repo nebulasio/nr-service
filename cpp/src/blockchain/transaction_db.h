@@ -48,12 +48,13 @@ public:
 };
 
 template <typename DB>
-class transaction_db : public db<DB>, public transaction_db_interface {
+class transaction_db : public db<DB, transaction_info_t>,
+                       public transaction_db_interface {
 public:
-  transaction_db() : db<DB>() {}
+  transaction_db() {}
   transaction_db(const std::string &url, const std::string &usrname,
                  const std::string &passwd, const std::string &dbname)
-      : db<DB>(url, usrname, passwd, dbname) {}
+      : db<DB, transaction_info_t>(url, usrname, passwd, dbname) {}
 
   virtual std::vector<transaction_info_t>
   read_transaction_simplified_from_db_with_duration(block_height_t start_block,
@@ -67,7 +68,7 @@ public:
             "gas_price:tx.gas_price, contract_address:tx.contract_address}") %
         start_block % end_block);
     auto resp_ptr = this->aql_query(aql);
-    return parse_from_response(std::move(resp_ptr));
+    return from_response(std::move(resp_ptr));
   }
 
   virtual std::vector<transaction_info_t>
@@ -82,7 +83,7 @@ public:
             "gas_price:tx.gas_price, contract_address:tx.contract_address}") %
         start_block % end_block);
     auto resp_ptr = this->aql_query(aql);
-    return parse_from_response(std::move(resp_ptr));
+    return from_response(std::move(resp_ptr));
   }
 
   virtual std::vector<transaction_info_t>
@@ -98,7 +99,7 @@ public:
             "contract_address:tx.contract_address}") %
         start_ts % end_ts);
     auto resp_ptr = this->aql_query(aql);
-    return parse_from_response(std::move(resp_ptr));
+    return from_response(std::move(resp_ptr));
   }
 
   virtual std::vector<transaction_info_t>
@@ -113,7 +114,7 @@ public:
             "gas_price:tx.gas_price, contract_address:tx.contract_address}") %
         address);
     auto resp_ptr = this->aql_query(aql);
-    return parse_from_response(std::move(resp_ptr));
+    return from_response(std::move(resp_ptr));
   }
 
   std::string to_string(const std::vector<transaction_info_t> &rs) {
@@ -156,12 +157,19 @@ public:
       arr.push_back(std::make_pair(std::string(), p));
     }
     root.add_child("transactions", arr);
-    return ptree_to_string(root);
+    return this->ptree_to_string(root);
   }
 
 private:
-  void set_transaction_info(transaction_info_t &info, const VPackSlice &slice,
-                            const std::string &key) {
+  std::vector<neb::transaction_info_t>
+  from_response(std::unique_ptr<::arangodb::fuerte::Response> resp_ptr) {
+    std::vector<transaction_info_t> rs;
+    this->parse_from_response(std::move(resp_ptr), rs);
+    return rs;
+  }
+
+  virtual void set_info(transaction_info_t &info, const VPackSlice &slice,
+                        const std::string &key) {
     if (key.compare("status") == 0) {
       info.template set<::neb::status>(slice.getInt());
     }
@@ -195,33 +203,6 @@ private:
     if (key.compare("contract_address") == 0) {
       info.template set<::neb::contract_address>(slice.copyString());
     }
-  }
-
-  std::vector<transaction_info_t> parse_from_response(
-      const std::unique_ptr<::arangodb::fuerte::Response> resp_ptr) {
-    std::vector<transaction_info_t> rs;
-    auto documents = resp_ptr->slices().front().get("result");
-    if (documents.isNone() || documents.isEmptyArray()) {
-      return rs;
-    }
-
-    for (size_t i = 0; i < documents.length(); i++) {
-      auto doc = documents.at(i);
-      transaction_info_t info;
-      for (size_t j = 0; j < doc.length(); j++) {
-        std::string key = doc.keyAt(j).copyString();
-        set_transaction_info(info, doc.valueAt(j), key);
-      }
-      rs.push_back(info);
-    }
-    return rs;
-  }
-
-  std::string ptree_to_string(const boost::property_tree::ptree &root) {
-    std::stringstream ss;
-    write_json(ss, root, false);
-    LOG(INFO) << "write json: " << ss.str();
-    return ss.str();
   }
 
 }; // end class transaction_db

@@ -42,12 +42,12 @@ public:
 };
 
 template <class DB>
-class account_db : public db<DB>, public account_db_interface {
+class account_db : public db<DB, account_info_t>, public account_db_interface {
 public:
   account_db() {}
   account_db(const std::string &url, const std::string &usrname,
              const std::string &passwd, const std::string &dbname)
-      : db<DB>(url, usrname, passwd, dbname) {
+      : db<DB, account_info_t>(url, usrname, passwd, dbname) {
     m_tdb_ptr =
         std::make_shared<transaction_db<DB>>(url, usrname, passwd, dbname);
   }
@@ -55,7 +55,10 @@ public:
   virtual std::vector<account_info_t> read_account_from_db() {
     const std::string aql = "for record in account return record";
     auto resp_ptr = this->aql_query(aql);
-    return parse_from_response(std::move(resp_ptr));
+
+    std::vector<account_info_t> rs;
+    this->parse_from_response(std::move(resp_ptr), rs);
+    return rs;
   }
 
   virtual std::vector<account_info_t>
@@ -65,7 +68,10 @@ public:
                                  "record.address=='%1%' return record") %
                    address);
     auto resp_ptr = this->aql_query(aql);
-    return parse_from_response(std::move(resp_ptr));
+
+    std::vector<account_info_t> rs;
+    this->parse_from_response(std::move(resp_ptr), rs);
+    return rs;
   }
 
   std::string to_string(const std::vector<account_info_t> &rs) {
@@ -95,7 +101,7 @@ public:
       arr.push_back(std::make_pair(std::string(), p));
     }
     root.add_child("accounts", arr);
-    return ptree_to_string(root);
+    return this->ptree_to_string(root);
   }
 
   virtual account_balance_t get_account_balance(block_height_t height,
@@ -217,7 +223,7 @@ public:
   }
 
 private:
-  void set_account_info(account_info_t &info, const VPackSlice &slice,
+  virtual void set_info(account_info_t &info, const VPackSlice &slice,
                         const std::string &key) {
     if (key.compare("address") == 0) {
       info.template set<::neb::address>(slice.copyString());
@@ -234,34 +240,6 @@ private:
     if (key.compare("create_at") == 0) {
       info.template set<::neb::create_at>(slice.copyString());
     }
-  }
-
-  std::vector<account_info_t> parse_from_response(
-      const std::unique_ptr<::arangodb::fuerte::Response> resp_ptr) {
-    std::vector<account_info_t> rs;
-
-    auto documents = resp_ptr->slices().front().get("result");
-    if (documents.isNone() || documents.isEmptyArray()) {
-      return rs;
-    }
-
-    for (size_t i = 0; i < documents.length(); i++) {
-      auto doc = documents.at(i);
-      account_info_t info;
-      for (size_t j = 0; j < doc.length(); j++) {
-        std::string key = doc.keyAt(j).copyString();
-        set_account_info(info, doc.valueAt(j), key);
-      }
-      rs.push_back(info);
-    }
-    return rs;
-  }
-
-  std::string ptree_to_string(const boost::property_tree::ptree &root) {
-    std::stringstream ss;
-    write_json(ss, root, false);
-    LOG(INFO) << "write json: " << ss.str();
-    return ss.str();
   }
 
 protected:
