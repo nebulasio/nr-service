@@ -3,11 +3,12 @@
 
 transaction_apiserver::transaction_apiserver(const std::string &appname)
     : apiserver(appname) {
-  m_height_transaction_cache_ptr =
-      std::make_unique<height_transaction_cache_t>();
+  m_height_transaction_cache_ptr = std::unique_ptr<height_transaction_cache_t>(
+      new height_transaction_cache_t());
 
   m_address_transaction_cache_ptr =
-      std::make_unique<address_transaction_cache_t>();
+      std::unique_ptr<address_transaction_cache_t>(
+          new address_transaction_cache_t());
 
   m_tx_ptr =
       std::make_shared<nebulas_transaction_db_t>(nebulas_transaction_db_t(
@@ -30,13 +31,16 @@ void transaction_apiserver::set_height_transaction_cache(
     neb::block_height_t height = it->template get<::neb::height>();
     height_and_txs[height].push_back(*it);
   }
+  LOG(INFO) << "height and transaction done";
 
   for (neb::block_height_t h = height; h <= height + read_ahead_height; h++) {
     auto it = height_and_txs.find(h);
+    LOG(INFO) << h;
     if (it != height_and_txs.end()) {
-      cache.set(h, it->second);
+      cache.set(h, std::make_shared<std::vector<neb::transaction_info_t>>(
+                       it->second));
     } else {
-      cache.set(h, std::vector<neb::transaction_info_t>());
+      cache.set(h, std::make_shared<std::vector<neb::transaction_info_t>>());
     }
   }
 }
@@ -68,10 +72,10 @@ std::string transaction_apiserver::on_api_height_transaction(
   neb::block_height_t end_block = std::stoi(s_end_block);
 
   height_transaction_cache_t &cache = *m_height_transaction_cache_ptr;
-  std::vector<neb::transaction_info_t> txs;
+  std::shared_ptr<std::vector<neb::transaction_info_t>> txs;
 
   for (neb::block_height_t h = start_block; h <= end_block; h++) {
-    std::vector<neb::transaction_info_t> rs;
+    std::shared_ptr<std::vector<neb::transaction_info_t>> rs;
     if (!cache.get(h, rs)) {
       LOG(INFO) << "transaction cache missed, reading from db";
       set_height_transaction_cache(cache, h);
@@ -80,11 +84,11 @@ std::string transaction_apiserver::on_api_height_transaction(
         LOG(INFO) << "transaction db missed";
       }
     }
-    txs.insert(txs.end(), rs.begin(), rs.end());
+    txs->insert(txs->end(), rs->begin(), rs->end());
   }
-  LOG(INFO) << "transaction size: " << txs.size();
+  LOG(INFO) << "transaction size: " << txs->size();
 
-  return m_tx_ptr->to_string(txs);
+  return m_tx_ptr->to_string(*txs);
 }
 
 void transaction_apiserver::set_address_transaction_cache(

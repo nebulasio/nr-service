@@ -113,32 +113,10 @@ public:
     return rs;
   }
 
-  static void convert_account_info_to_ptree(const account_info_t &info,
-                                            boost::property_tree::ptree &p) {
-    std::string address = info.template get<::neb::address>();
-    std::string balance = info.template get<::neb::balance>();
-    std::string account_type = info.template get<::neb::account_type>();
-    std::string create_at = info.template get<::neb::create_at>();
-    int64_t height = info.template get<::neb::height>();
-
-    std::unordered_map<std::string, std::string> kv_pair(
-        {{"address", address},
-         {"balance", balance},
-         {"type", account_type},
-         {"create_at", create_at},
-         {"height", std::to_string(height)}});
-
-    for (auto &ele : kv_pair) {
-      p.put(ele.first, ele.second);
-    }
-  }
-
   static std::string account_info_to_string(const account_info_t &info) {
-    boost::property_tree::ptree root;
     boost::property_tree::ptree p;
     convert_account_info_to_ptree(info, p);
-    root.add_child("accounts", p);
-    return base_db_t::ptree_to_string(root);
+    return base_db_t::ptree_to_string(p);
   }
 
   static std::string
@@ -273,6 +251,27 @@ public:
       }
     }
     LOG(INFO) << "template account_db, init height address value finish";
+  }
+
+private:
+  static void convert_account_info_to_ptree(const account_info_t &info,
+                                            boost::property_tree::ptree &p) {
+    std::string address = info.template get<::neb::address>();
+    std::string balance = info.template get<::neb::balance>();
+    std::string account_type = info.template get<::neb::account_type>();
+    std::string create_at = info.template get<::neb::create_at>();
+    int64_t height = info.template get<::neb::height>();
+
+    std::unordered_map<std::string, std::string> kv_pair(
+        {{"address", address},
+         {"balance", balance},
+         {"type", account_type},
+         {"create_at", create_at},
+         {"height", std::to_string(height)}});
+
+    for (auto &ele : kv_pair) {
+      p.put(ele.first, ele.second);
+    }
   }
 
 protected:

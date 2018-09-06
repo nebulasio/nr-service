@@ -4,7 +4,7 @@
 
 account_apiserver::account_apiserver(const std::string &appname)
     : apiserver(appname) {
-  m_cache_ptr = std::make_unique<account_cache_t>();
+  m_cache_ptr = std::unique_ptr<account_cache_t>(new account_cache_t());
   m_ac_ptr = std::make_shared<nebulas_account_db_t>(nebulas_account_db_t(
       std::getenv("DB_URL"), std::getenv("DB_USER_NAME"),
       std::getenv("DB_PASSWORD"), std::getenv("NEBULAS_DB")));
@@ -42,7 +42,6 @@ std::string account_apiserver::on_api_account(
       return err_code_query_response_empty;
     }
   }
-
   return nebulas_account_db_t::account_info_to_string(*info);
 }
 

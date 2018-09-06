@@ -5,7 +5,7 @@
 #include "cache/lru_cache.h"
 
 typedef neb::lru_cache<neb::block_height_t,
-                       std::vector<neb::transaction_info_t>>
+                       std::shared_ptr<std::vector<neb::transaction_info_t>>>
     height_transaction_cache_t;
 typedef neb::lru_cache<std::string, std::vector<neb::transaction_info_t>>
     address_transaction_cache_t;

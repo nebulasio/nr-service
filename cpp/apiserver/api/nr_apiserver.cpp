@@ -2,7 +2,7 @@
 #include "err/err_def.h"
 
 nr_apiserver::nr_apiserver(const std::string &appname) : apiserver(appname) {
-  m_cache_ptr = std::make_unique<nr_cache_t>();
+  m_cache_ptr = std::unique_ptr<nr_cache_t>(new nr_cache_t());
   m_nr_ptr = std::make_shared<nebulas_nr_db_t>(
       nebulas_nr_db_t(std::getenv("DB_URL"), std::getenv("DB_USER_NAME"),
                       std::getenv("DB_PASSWORD"), std::getenv("NEBULAS_DB")));
@@ -28,7 +28,7 @@ std::string nr_apiserver::on_api_nr(
   }
 
   nr_cache_t &cache = *m_cache_ptr;
-  std::vector<neb::nr_info_t> rs;
+  std::shared_ptr<std::vector<neb::nr_info_t>> rs;
 
   if (!cache.get(date, rs)) {
     LOG(INFO) << "nr cache missed, reading from db";
@@ -38,12 +38,12 @@ std::string nr_apiserver::on_api_nr(
       LOG(INFO) << "nr db missed";
     }
   }
-  return m_nr_ptr->to_string(rs);
+  return nebulas_nr_db_t::nr_infos_to_string(*rs);
 }
 
 void nr_apiserver::set_nr_cache(nr_cache_t &cache, const std::string &date) {
   std::vector<neb::nr_info_t> rs = m_nr_ptr->read_nr_by_date(date);
   LOG(INFO) << "read nr by date, size: " << rs.size();
-  cache.set(date, rs);
+  cache.set(date, std::make_shared<std::vector<neb::nr_info_t>>(rs));
   return;
 }

@@ -1,4 +1,3 @@
-include_directories(./)
 include_directories(${PROJECT_SOURCE_DIR}/apiserver)
 
 set(lib_src

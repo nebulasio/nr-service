@@ -50,9 +50,6 @@ public:
   }
 
 protected:
-  // virtual void set_info(T &info, const VPackSlice &slice,
-  // const std::string &key) {}
-
   static void parse_from_response(
       const std::unique_ptr<::arangodb::fuerte::Response> &resp_ptr,
       std::vector<typename InfoSetter::info_type> &rs) {

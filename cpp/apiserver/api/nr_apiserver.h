@@ -4,7 +4,9 @@
 #include "cache/lru_cache.h"
 #include "nr.h"
 
-typedef neb::lru_cache<std::string, std::vector<neb::nr_info_t>> nr_cache_t;
+typedef neb::lru_cache<std::string,
+                       std::shared_ptr<std::vector<neb::nr_info_t>>>
+    nr_cache_t;
 typedef neb::nr_db<neb::nebulas_db> nebulas_nr_db_t;
 typedef std::shared_ptr<nebulas_nr_db_t> nebulas_nr_db_ptr_t;
 

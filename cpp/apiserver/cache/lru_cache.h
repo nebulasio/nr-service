@@ -9,14 +9,6 @@
 
 namespace neb {
 
-
-class null_lock {
-public:
-  void lock() {}
-  void unlock() {}
-  bool try_lock() { return true; }
-};
-
 template <class Key, class Value, class Lock = std::mutex,
           int32_t CacheCleanPeriod = 8, int32_t CacheCleanCounter = 256>
 class lru_cache {
@@ -39,23 +31,23 @@ public:
   };
 
   size_t size() const {
-    guard_t g(m_lock);
+    guard_t __l(m_lock);
     return m_cache_map.size();
   }
 
   bool empty() const {
-    guard_t g(m_lock);
+    guard_t __l(m_lock);
     return m_cache_map.empty();
   }
 
   void clear() {
-    guard_t g(m_lock);
+    guard_t __l(m_lock);
     m_cache_map.clear();
     m_counter.clear();
   }
 
   void set(const Key &k, const Value &v) {
-    guard_t g(m_lock);
+    guard_t __l(m_lock);
     const auto iter = m_cache_map.find(k);
     if (iter != m_cache_map.end()) {
       return;
@@ -66,7 +58,7 @@ public:
   }
 
   bool get(const Key &k, Value &v) {
-    guard_t g(m_lock);
+    guard_t __l(m_lock);
     const auto iter = m_cache_map.find(k);
     if (iter == m_cache_map.end()) {
       return false;
@@ -79,7 +71,6 @@ public:
 
   bool exists(const Key &k) const {
     guard_t __l(m_lock);
-
     return m_cache_map.find(k) != m_cache_map.end();
   }
 
@@ -110,7 +101,6 @@ private:
   mutable Lock m_lock;
   map_t m_cache_map;
   std::unordered_map<Key, int32_t> m_counter;
-  size_t m_cache_max_size;
   std::shared_ptr<std::thread> m_thread;
   std::atomic_int m_thread_exit_flag;
 };

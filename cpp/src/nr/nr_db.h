@@ -74,6 +74,7 @@ struct nr_db_info_setter {
     }
   }
 };
+
 template <typename DB>
 class nr_db : public db<DB, nr_db_info_setter>, public nr_db_interface {
 public:
@@ -121,42 +122,14 @@ public:
     return rs;
   }
 
-  static std::string to_string(const std::vector<nr_info_t> &rs) {
+  static std::string nr_infos_to_string(const std::vector<nr_info_t> &rs) {
     boost::property_tree::ptree root;
     boost::property_tree::ptree arr;
 
     for (auto it = rs.begin(); it != rs.end(); it++) {
       const nr_info_t &info = *it;
-      std::string date = info.template get<::neb::date>();
-      std::string address = info.template get<::neb::address>();
-      double median = info.template get<::neb::median>();
-      double weight = info.template get<::neb::weight>();
-      double score = info.template get<::neb::score>();
-      int32_t in_degree = info.template get<::neb::in_degree>();
-      int32_t out_degree = info.template get<::neb::out_degree>();
-      int32_t degrees = info.template get<::neb::degrees>();
-      double in_val = info.template get<::neb::in_val>();
-      double out_val = info.template get<::neb::out_val>();
-      double in_outs = info.template get<::neb::in_outs>();
-
-      std::unordered_map<std::string, std::string> kv_pair(
-          {{"date", date},
-           {"address", address},
-           {"median", std::to_string(median)},
-           {"weight", std::to_string(weight)},
-           {"score", std::to_string(score)},
-           {"in_degree", std::to_string(in_degree)},
-           {"out_degree", std::to_string(out_degree)},
-           {"degrees", std::to_string(degrees)},
-           {"in_val", std::to_string(in_val)},
-           {"out_val", std::to_string(out_val)},
-           {"in_outs", std::to_string(in_outs)}});
-
       boost::property_tree::ptree p;
-      for (auto &ele : kv_pair) {
-        p.put(ele.first, ele.second);
-      }
-
+      convert_nr_info_to_ptree(info, p);
       arr.push_back(std::make_pair(std::string(), p));
     }
     root.add_child("nr", arr);
@@ -164,6 +137,36 @@ public:
   }
 
 private:
+  static void convert_nr_info_to_ptree(const nr_info_t &info,
+                                       boost::property_tree::ptree &p) {
+    std::string date = info.template get<::neb::date>();
+    std::string address = info.template get<::neb::address>();
+    double median = info.template get<::neb::median>();
+    double weight = info.template get<::neb::weight>();
+    double score = info.template get<::neb::score>();
+    int32_t in_degree = info.template get<::neb::in_degree>();
+    int32_t out_degree = info.template get<::neb::out_degree>();
+    int32_t degrees = info.template get<::neb::degrees>();
+    double in_val = info.template get<::neb::in_val>();
+    double out_val = info.template get<::neb::out_val>();
+    double in_outs = info.template get<::neb::in_outs>();
 
+    std::unordered_map<std::string, std::string> kv_pair(
+        {{"date", date},
+         {"address", address},
+         {"median", std::to_string(median)},
+         {"weight", std::to_string(weight)},
+         {"score", std::to_string(score)},
+         {"in_degree", std::to_string(in_degree)},
+         {"out_degree", std::to_string(out_degree)},
+         {"degrees", std::to_string(degrees)},
+         {"in_val", std::to_string(in_val)},
+         {"out_val", std::to_string(out_val)},
+         {"in_outs", std::to_string(in_outs)}});
+
+    for (auto &ele : kv_pair) {
+      p.put(ele.first, ele.second);
+    }
+  }
 };
 } // namespace neb
