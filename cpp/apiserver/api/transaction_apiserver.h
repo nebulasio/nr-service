@@ -7,7 +7,8 @@
 typedef neb::lru_cache<neb::block_height_t,
                        std::shared_ptr<std::vector<neb::transaction_info_t>>>
     height_transaction_cache_t;
-typedef neb::lru_cache<std::string, std::vector<neb::transaction_info_t>>
+typedef neb::lru_cache<std::string,
+                       std::shared_ptr<std::vector<neb::transaction_info_t>>>
     address_transaction_cache_t;
 typedef neb::transaction_db<neb::nebulas_db> nebulas_transaction_db_t;
 typedef std::shared_ptr<nebulas_transaction_db_t> nebulas_transaction_db_ptr_t;

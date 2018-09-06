@@ -31,11 +31,9 @@ void transaction_apiserver::set_height_transaction_cache(
     neb::block_height_t height = it->template get<::neb::height>();
     height_and_txs[height].push_back(*it);
   }
-  LOG(INFO) << "height and transaction done";
 
   for (neb::block_height_t h = height; h <= height + read_ahead_height; h++) {
     auto it = height_and_txs.find(h);
-    LOG(INFO) << h;
     if (it != height_and_txs.end()) {
       cache.set(h, std::make_shared<std::vector<neb::transaction_info_t>>(
                        it->second));
@@ -72,10 +70,12 @@ std::string transaction_apiserver::on_api_height_transaction(
   neb::block_height_t end_block = std::stoi(s_end_block);
 
   height_transaction_cache_t &cache = *m_height_transaction_cache_ptr;
-  std::shared_ptr<std::vector<neb::transaction_info_t>> txs;
+  std::shared_ptr<std::vector<neb::transaction_info_t>> txs =
+      std::make_shared<std::vector<neb::transaction_info_t>>();
 
   for (neb::block_height_t h = start_block; h <= end_block; h++) {
-    std::shared_ptr<std::vector<neb::transaction_info_t>> rs;
+    std::shared_ptr<std::vector<neb::transaction_info_t>> rs =
+        std::make_shared<std::vector<neb::transaction_info_t>>();
     if (!cache.get(h, rs)) {
       LOG(INFO) << "transaction cache missed, reading from db";
       set_height_transaction_cache(cache, h);
@@ -88,7 +88,7 @@ std::string transaction_apiserver::on_api_height_transaction(
   }
   LOG(INFO) << "transaction size: " << txs->size();
 
-  return m_tx_ptr->to_string(*txs);
+  return nebulas_transaction_db_t::transaction_infos_to_string(*txs);
 }
 
 void transaction_apiserver::set_address_transaction_cache(
@@ -98,7 +98,8 @@ void transaction_apiserver::set_address_transaction_cache(
       m_tx_ptr->read_success_and_failed_transaction_from_db_with_address(
           address);
   LOG(INFO) << "read transaction by address, size: " << rs.size();
-  cache.set(address, rs);
+  cache.set(address,
+            std::make_shared<std::vector<neb::transaction_info_t>>(rs));
   return;
 }
 
@@ -123,7 +124,8 @@ std::string transaction_apiserver::on_api_address_transaction(
   }
 
   address_transaction_cache_t &cache = *m_address_transaction_cache_ptr;
-  std::vector<neb::transaction_info_t> rs;
+  std::shared_ptr<std::vector<neb::transaction_info_t>> rs =
+      std::make_shared<std::vector<neb::transaction_info_t>>();
   if (!cache.get(address, rs)) {
     LOG(INFO) << "transaction cache missed, reading from db";
     set_address_transaction_cache(cache, address);
@@ -132,9 +134,9 @@ std::string transaction_apiserver::on_api_address_transaction(
       LOG(INFO) << "transaction db missed";
     }
   }
-  LOG(INFO) << "transaction size: " << rs.size();
+  LOG(INFO) << "transaction size: " << rs->size();
 
-  return m_tx_ptr->to_string(rs);
+  return nebulas_transaction_db_t::transaction_infos_to_string(*rs);
 }
 
 bool transaction_apiserver::has_keys_in_params(

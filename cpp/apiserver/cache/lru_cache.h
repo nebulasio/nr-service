@@ -10,7 +10,7 @@
 namespace neb {
 
 template <class Key, class Value, class Lock = std::mutex,
-          int32_t CacheCleanPeriod = 8, int32_t CacheCleanCounter = 256>
+          int32_t CacheCleanPeriod = 1, int32_t CacheCleanCounter = 64>
 class lru_cache {
 public:
   typedef std::unordered_map<Key, Value> map_t;

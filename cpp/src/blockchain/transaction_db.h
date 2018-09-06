@@ -158,43 +158,15 @@ public:
     return from_response(std::move(resp_ptr));
   }
 
-  std::string to_string(const std::vector<transaction_info_t> &rs) {
+  static std::string
+  transaction_infos_to_string(const std::vector<transaction_info_t> &rs) {
     boost::property_tree::ptree root;
     boost::property_tree::ptree arr;
 
     for (auto it = rs.begin(); it != rs.end(); it++) {
       const transaction_info_t &info = *it;
-      int64_t status = info.template get<::neb::status>();
-      std::string from = info.template get<::neb::from>();
-      std::string to = info.template get<::neb::to>();
-      std::string tx_value = info.template get<::neb::tx_value>();
-      int64_t height = info.template get<::neb::height>();
-      std::string timestamp = info.template get<::neb::timestamp>();
-      std::string type_from = info.template get<::neb::type_from>();
-      std::string type_to = info.template get<::neb::type_to>();
-      std::string gas_used = info.template get<::neb::gas_used>();
-      std::string gas_price = info.template get<::neb::gas_price>();
-      std::string contract_address =
-          info.template get<::neb::contract_address>();
-
-      std::unordered_map<std::string, std::string> kv_pair(
-          {{"status", std::to_string(status)},
-           {"from", from},
-           {"to", to},
-           {"tx_value", tx_value},
-           {"height", std::to_string(height)},
-           {"timestamp", timestamp},
-           {"type_from", type_from},
-           {"type_to", type_to},
-           {"gas_used", gas_used},
-           {"gas_price", gas_price},
-           {"contract_address", contract_address}});
-
       boost::property_tree::ptree p;
-      for (auto &ele : kv_pair) {
-        p.put(ele.first, ele.second);
-      }
-
+      convert_transaction_info_to_ptree(info, p);
       arr.push_back(std::make_pair(std::string(), p));
     }
     root.add_child("transactions", arr);
@@ -202,10 +174,43 @@ public:
   }
 
 private:
-  std::vector<neb::transaction_info_t>
+  static void
+  convert_transaction_info_to_ptree(const transaction_info_t &info,
+                                    boost::property_tree::ptree &p) {
+    int64_t status = info.template get<::neb::status>();
+    std::string from = info.template get<::neb::from>();
+    std::string to = info.template get<::neb::to>();
+    std::string tx_value = info.template get<::neb::tx_value>();
+    int64_t height = info.template get<::neb::height>();
+    std::string timestamp = info.template get<::neb::timestamp>();
+    std::string type_from = info.template get<::neb::type_from>();
+    std::string type_to = info.template get<::neb::type_to>();
+    std::string gas_used = info.template get<::neb::gas_used>();
+    std::string gas_price = info.template get<::neb::gas_price>();
+    std::string contract_address = info.template get<::neb::contract_address>();
+
+    std::unordered_map<std::string, std::string> kv_pair(
+        {{"status", std::to_string(status)},
+         {"from", from},
+         {"to", to},
+         {"tx_value", tx_value},
+         {"height", std::to_string(height)},
+         {"timestamp", timestamp},
+         {"type_from", type_from},
+         {"type_to", type_to},
+         {"gas_used", gas_used},
+         {"gas_price", gas_price},
+         {"contract_address", contract_address}});
+
+    for (auto &ele : kv_pair) {
+      p.put(ele.first, ele.second);
+    }
+  }
+
+  static std::vector<neb::transaction_info_t>
   from_response(std::unique_ptr<::arangodb::fuerte::Response> resp_ptr) {
     std::vector<transaction_info_t> rs;
-    this->parse_from_response(std::move(resp_ptr), rs);
+    base_db_t::parse_from_response(std::move(resp_ptr), rs);
     return rs;
   }
 

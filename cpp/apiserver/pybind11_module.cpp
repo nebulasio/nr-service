@@ -10,8 +10,8 @@
 #include "apiserver.h"
 
 PYBIND11_MODULE(nebserver, m) {
-  // google::InitGoogleLogging("apinebserver");
-  // FLAGS_log_dir = std::string(std::getenv("GLOG_DIR"));
+  google::InitGoogleLogging("apinebserver");
+  FLAGS_log_dir = std::string(std::getenv("GLOG_DIR"));
 
   pybind11::class_<apiserver>(m, "apiserver")
       .def(pybind11::init<const std::string &>())
