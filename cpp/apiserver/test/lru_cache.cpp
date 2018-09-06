@@ -1,4 +1,4 @@
-#include "lru_cache.h"
+#include "cache/lru_cache.h"
 #include "blockchain.h"
 #include "utils.h"
 
@@ -7,11 +7,11 @@ DEFINE_int64(end_block, 1, "the end block height");
 DEFINE_int32(cache_size, 24 * 3600 / 15, "LRU cache max size");
 
 void example() {
-  neb::lru_cache<int32_t, int32_t> cache(3);
+  neb::lru_cache<int32_t, int32_t> cache;
   int32_t a[] = {7, 0, 1, 2, 0, 3, 0, 4};
 
-  auto f = [](const neb::key_value_pair_t<int32_t, int32_t> &p) {
-    std::cout << p.m_key << ',';
+  auto f = [](int32_t key, int32_t value) {
+    std::cout << key << " - " << value << ',';
   };
 
   for (size_t i = 0; i < sizeof(a) / sizeof(a[0]); i++) {
@@ -61,10 +61,10 @@ void set_cache(neb::lru_cache<neb::block_height_t,
   }
 }
 
-void transaction_cache(int32_t cache_size) {
+void transaction_cache(int32_t) {
 
   neb::lru_cache<neb::block_height_t, std::vector<neb::transaction_info_t>>
-      cache(cache_size);
+      cache;
 
   neb::block_height_t start_block;
   neb::block_height_t end_block;

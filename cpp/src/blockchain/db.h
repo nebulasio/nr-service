@@ -10,7 +10,7 @@ namespace neb {
 
 class db_interface {};
 
-template <typename DB, typename T> class db : public db_interface {
+template <typename DB, typename InfoSetter> class db : public db_interface {
 public:
   db() {}
   db(const std::string &url, const std::string &usrname,
@@ -50,12 +50,12 @@ public:
   }
 
 protected:
-  virtual void set_info(T &info, const VPackSlice &slice,
-                        const std::string &key) {}
+  // virtual void set_info(T &info, const VPackSlice &slice,
+  // const std::string &key) {}
 
-  void parse_from_response(
-      const std::unique_ptr<::arangodb::fuerte::Response> resp_ptr,
-      std::vector<T> &rs) {
+  static void parse_from_response(
+      const std::unique_ptr<::arangodb::fuerte::Response> &resp_ptr,
+      std::vector<typename InfoSetter::info_type> &rs) {
 
     auto documents = resp_ptr->slices().front().get("result");
     if (documents.isNone() || documents.isEmptyArray()) {
@@ -64,17 +64,17 @@ protected:
 
     for (size_t i = 0; i < documents.length(); i++) {
       auto doc = documents.at(i);
-      T info;
+      typename InfoSetter::info_type info;
       for (size_t j = 0; j < doc.length(); j++) {
         std::string key = doc.keyAt(j).copyString();
-        set_info(info, doc.valueAt(j), key);
+        InfoSetter::set_info(info, doc.valueAt(j), key);
       }
       rs.push_back(info);
     }
     return;
   }
 
-  std::string ptree_to_string(const boost::property_tree::ptree &root) {
+  static std::string ptree_to_string(const boost::property_tree::ptree &root) {
     std::stringstream ss;
     write_json(ss, root, false);
     LOG(INFO) << "write json: " << ss.str();

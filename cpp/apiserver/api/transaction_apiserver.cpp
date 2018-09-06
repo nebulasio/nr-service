@@ -1,15 +1,13 @@
 #include "transaction_apiserver.h"
 #include "err/err_def.h"
 
-transaction_apiserver::transaction_apiserver(const std::string &appname,
-                                             size_t cache_size)
+transaction_apiserver::transaction_apiserver(const std::string &appname)
     : apiserver(appname) {
-  m_height_transaction_cache_ptr = std::make_unique<height_transaction_cache_t>(
-      height_transaction_cache_t(cache_size));
+  m_height_transaction_cache_ptr =
+      std::make_unique<height_transaction_cache_t>();
 
   m_address_transaction_cache_ptr =
-      std::make_unique<address_transaction_cache_t>(
-          address_transaction_cache_t(cache_size));
+      std::make_unique<address_transaction_cache_t>();
 
   m_tx_ptr =
       std::make_shared<nebulas_transaction_db_t>(nebulas_transaction_db_t(

@@ -18,9 +18,9 @@ import nebserver
 app = Flask(__name__)
 api = Api(app)
 
-transaction_apiserver = nebserver.transaction_apiserver(__name__, 1 << 20)
-account_apiserver = nebserver.account_apiserver(__name__, 1 << 20)
-nr_apiserver = nebserver.nr_apiserver(__name__, 1 << 20)
+transaction_apiserver = nebserver.transaction_apiserver(__name__)
+account_apiserver = nebserver.account_apiserver(__name__)
+nr_apiserver = nebserver.nr_apiserver(__name__)
 
 
 @app.route('/transaction')

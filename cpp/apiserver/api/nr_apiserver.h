@@ -10,7 +10,7 @@ typedef std::shared_ptr<nebulas_nr_db_t> nebulas_nr_db_ptr_t;
 
 class nr_apiserver : public apiserver {
 public:
-  nr_apiserver(const std::string &appname, size_t cache_size);
+  nr_apiserver(const std::string &appname);
 
   std::string
   on_api_nr(const std::unordered_map<std::string, std::string> &params);

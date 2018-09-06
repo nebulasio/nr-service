@@ -18,14 +18,14 @@ PYBIND11_MODULE(nebserver, m) {
       .def("on_api_example", &apiserver::on_api_example);
 
   pybind11::class_<transaction_apiserver>(m, "transaction_apiserver")
-      .def(pybind11::init<const std::string &, int32_t>())
+      .def(pybind11::init<const std::string &>())
       .def("on_api_transaction", &transaction_apiserver::on_api_transaction);
 
   pybind11::class_<account_apiserver>(m, "account_apiserver")
-      .def(pybind11::init<const std::string &, int32_t>())
+      .def(pybind11::init<const std::string &>())
       .def("on_api_account", &account_apiserver::on_api_account);
 
   pybind11::class_<nr_apiserver>(m, "nr_apiserver")
-      .def(pybind11::init<const std::string &, int32_t>())
+      .def(pybind11::init<const std::string &>())
       .def("on_api_nr", &nr_apiserver::on_api_nr);
 }

@@ -14,7 +14,7 @@ typedef std::shared_ptr<nebulas_transaction_db_t> nebulas_transaction_db_ptr_t;
 
 class transaction_apiserver : public apiserver {
 public:
-  transaction_apiserver(const std::string &appname, size_t cache_size);
+  transaction_apiserver(const std::string &appname);
 
   std::string on_api_transaction(
       const std::unordered_map<std::string, std::string> &params);

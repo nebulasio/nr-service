@@ -1,9 +1,8 @@
 #include "nr_apiserver.h"
 #include "err/err_def.h"
 
-nr_apiserver::nr_apiserver(const std::string &appname, size_t cache_size)
-    : apiserver(appname) {
-  m_cache_ptr = std::make_unique<nr_cache_t>(nr_cache_t(cache_size));
+nr_apiserver::nr_apiserver(const std::string &appname) : apiserver(appname) {
+  m_cache_ptr = std::make_unique<nr_cache_t>();
   m_nr_ptr = std::make_shared<nebulas_nr_db_t>(
       nebulas_nr_db_t(std::getenv("DB_URL"), std::getenv("DB_USER_NAME"),
                       std::getenv("DB_PASSWORD"), std::getenv("NEBULAS_DB")));

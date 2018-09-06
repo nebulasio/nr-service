@@ -41,13 +41,37 @@ public:
                                       int64_t end_block) = 0;
 };
 
+struct account_db_info_setter {
+  typedef account_info_t info_type;
+  static void set_info(account_info_t &info, const VPackSlice &slice,
+                       const std::string &key) {
+    if (key.compare("address") == 0) {
+      info.template set<::neb::address>(slice.copyString());
+    }
+    if (key.compare("balance") == 0) {
+      info.template set<::neb::balance>(slice.copyString());
+    }
+    if (key.compare("height") == 0) {
+      info.template set<::neb::height>(slice.getInt());
+    }
+    if (key.compare("type") == 0) {
+      info.template set<::neb::account_type>(slice.copyString());
+    }
+    if (key.compare("create_at") == 0) {
+      info.template set<::neb::create_at>(slice.copyString());
+    }
+  }
+};
 template <class DB>
-class account_db : public db<DB, account_info_t>, public account_db_interface {
+class account_db : public db<DB, account_db_info_setter>,
+                   public account_db_interface {
 public:
+  typedef db<DB, account_db_info_setter> base_db_t;
+
   account_db() {}
   account_db(const std::string &url, const std::string &usrname,
              const std::string &passwd, const std::string &dbname)
-      : db<DB, account_info_t>(url, usrname, passwd, dbname) {
+      : db<DB, account_db_info_setter>(url, usrname, passwd, dbname) {
     m_tdb_ptr =
         std::make_shared<transaction_db<DB>>(url, usrname, passwd, dbname);
   }
@@ -57,7 +81,7 @@ public:
     auto resp_ptr = this->aql_query(aql);
 
     std::vector<account_info_t> rs;
-    this->parse_from_response(std::move(resp_ptr), rs);
+    base_db_t::parse_from_response(std::move(resp_ptr), rs);
     return rs;
   }
 
@@ -70,38 +94,49 @@ public:
     auto resp_ptr = this->aql_query(aql);
 
     std::vector<account_info_t> rs;
-    this->parse_from_response(std::move(resp_ptr), rs);
+    base_db_t::parse_from_response(std::move(resp_ptr), rs);
     return rs;
   }
 
-  std::string to_string(const std::vector<account_info_t> &rs) {
+  static void convert_account_info_to_ptree(const account_info_t &info,
+                                            boost::property_tree::ptree &p) {
+    std::string address = info.template get<::neb::address>();
+    std::string balance = info.template get<::neb::balance>();
+    std::string account_type = info.template get<::neb::account_type>();
+    std::string create_at = info.template get<::neb::create_at>();
+    int64_t height = info.template get<::neb::height>();
+
+    std::unordered_map<std::string, std::string> kv_pair(
+        {{"address", address},
+         {"balance", balance},
+         {"type", account_type},
+         {"create_at", create_at},
+         {"height", std::to_string(height)}});
+
+    for (auto &ele : kv_pair) {
+      p.put(ele.first, ele.second);
+    }
+  }
+  static std::string account_info_to_string(const account_info_t &info) {
+    boost::property_tree::ptree p;
+    convert_account_info_to_ptree(info, p);
+    return base_db_t::ptree_to_string(p);
+  }
+
+  static std::string
+  account_infos_to_string(const std::vector<account_info_t> &rs) {
     boost::property_tree::ptree root;
     boost::property_tree::ptree arr;
 
     for (auto it = rs.begin(); it != rs.end(); it++) {
       const account_info_t &info = *it;
-      std::string address = info.template get<::neb::address>();
-      std::string balance = info.template get<::neb::balance>();
-      std::string account_type = info.template get<::neb::account_type>();
-      std::string create_at = info.template get<::neb::create_at>();
-      int64_t height = info.template get<::neb::height>();
-
-      std::unordered_map<std::string, std::string> kv_pair(
-          {{"address", address},
-           {"balance", balance},
-           {"type", account_type},
-           {"create_at", create_at},
-           {"height", std::to_string(height)}});
-
       boost::property_tree::ptree p;
-      for (auto &ele : kv_pair) {
-        p.put(ele.first, ele.second);
-      }
+      convert_account_info_to_ptree(info, p);
 
       arr.push_back(std::make_pair(std::string(), p));
     }
     root.add_child("accounts", arr);
-    return this->ptree_to_string(root);
+    return base_db_t::ptree_to_string(root);
   }
 
   virtual account_balance_t get_account_balance(block_height_t height,
@@ -220,26 +255,6 @@ public:
       }
     }
     LOG(INFO) << "template account_db, init height address value finish";
-  }
-
-private:
-  virtual void set_info(account_info_t &info, const VPackSlice &slice,
-                        const std::string &key) {
-    if (key.compare("address") == 0) {
-      info.template set<::neb::address>(slice.copyString());
-    }
-    if (key.compare("balance") == 0) {
-      info.template set<::neb::balance>(slice.copyString());
-    }
-    if (key.compare("height") == 0) {
-      info.template set<::neb::height>(slice.getInt());
-    }
-    if (key.compare("type") == 0) {
-      info.template set<::neb::account_type>(slice.copyString());
-    }
-    if (key.compare("create_at") == 0) {
-      info.template set<::neb::create_at>(slice.copyString());
-    }
   }
 
 protected:

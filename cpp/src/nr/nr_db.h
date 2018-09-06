@@ -28,97 +28,11 @@ public:
   virtual std::vector<nr_info_t> read_nr_by_date(const std::string &date) = 0;
 };
 
-template <typename DB>
-class nr_db : public db<DB, nr_info_t>, public nr_db_interface {
-public:
-  nr_db() {}
-  nr_db(const std::string &url, const std::string &usrname,
-        const std::string &passwd, const std::string &dbname)
-      : db<DB, nr_info_t>(url, usrname, passwd, dbname) {}
+struct nr_db_info_setter {
+  typedef nr_info_t info_type;
 
-  virtual void insert_document_to_collection(const nr_info_t &info) {
-    std::string date = info.template get<::neb::date>();
-    std::string address = info.template get<::neb::address>();
-    double median = info.template get<::neb::median>();
-    double weight = info.template get<::neb::weight>();
-    double score = info.template get<::neb::score>();
-    int32_t in_degree = info.template get<::neb::in_degree>();
-    int32_t out_degree = info.template get<::neb::out_degree>();
-    int32_t degrees = info.template get<::neb::degrees>();
-    double in_val = info.template get<::neb::in_val>();
-    double out_val = info.template get<::neb::out_val>();
-    double in_outs = info.template get<::neb::in_outs>();
-
-    const std::string aql = boost::str(
-        boost::format(
-            "upsert {_key:'%1%'} "
-            "insert {_key:'%1%', date:'%2%', address:'%3%', median:%4%, "
-            "weight:%5%, score:%6%, in_degree:%7%, out_degree:%8%, "
-            "degrees:%9%, in_val:%10%, out_val:%11%, in_outs:%12%} "
-            "update {date:'%2%', address:'%3%', median:%4%, weight:%5%, "
-            "score:%6%, in_degree:%7%, out_degree:%8%, degrees:%9%, "
-            "in_val:%10%, out_val:%11%, in_outs:%12%} in nr") %
-        (date + '-' + address) % date % address % median % weight % score %
-        in_degree % out_degree % degrees % in_val % out_val % in_outs);
-    this->aql_query(aql);
-  }
-
-  virtual std::vector<nr_info_t> read_nr_by_date(const std::string &date) {
-    const std::string aql = boost::str(
-        boost::format("for item in nr filter item.date=='%1%' return item") %
-        date);
-    auto resp_ptr = this->aql_query(aql);
-
-    std::vector<nr_info_t> rs;
-    this->parse_from_response(std::move(resp_ptr), rs);
-    return rs;
-  }
-
-  std::string to_string(const std::vector<nr_info_t> &rs) {
-    boost::property_tree::ptree root;
-    boost::property_tree::ptree arr;
-
-    for (auto it = rs.begin(); it != rs.end(); it++) {
-      const nr_info_t &info = *it;
-      std::string date = info.template get<::neb::date>();
-      std::string address = info.template get<::neb::address>();
-      double median = info.template get<::neb::median>();
-      double weight = info.template get<::neb::weight>();
-      double score = info.template get<::neb::score>();
-      int32_t in_degree = info.template get<::neb::in_degree>();
-      int32_t out_degree = info.template get<::neb::out_degree>();
-      int32_t degrees = info.template get<::neb::degrees>();
-      double in_val = info.template get<::neb::in_val>();
-      double out_val = info.template get<::neb::out_val>();
-      double in_outs = info.template get<::neb::in_outs>();
-
-      std::unordered_map<std::string, std::string> kv_pair(
-          {{"date", date},
-           {"address", address},
-           {"median", std::to_string(median)},
-           {"weight", std::to_string(weight)},
-           {"score", std::to_string(score)},
-           {"in_degree", std::to_string(in_degree)},
-           {"out_degree", std::to_string(out_degree)},
-           {"degrees", std::to_string(degrees)},
-           {"in_val", std::to_string(in_val)},
-           {"out_val", std::to_string(out_val)},
-           {"in_outs", std::to_string(in_outs)}});
-
-      boost::property_tree::ptree p;
-      for (auto &ele : kv_pair) {
-        p.put(ele.first, ele.second);
-      }
-
-      arr.push_back(std::make_pair(std::string(), p));
-    }
-    root.add_child("nr", arr);
-    return this->ptree_to_string(root);
-  }
-
-private:
-  virtual void set_info(nr_info_t &info, const VPackSlice &slice,
-                        const std::string &key) {
+  static void set_info(nr_info_t &info, const VPackSlice &slice,
+                       const std::string &key) {
     if (key.compare("date") == 0) {
       info.template set<::neb::date>(slice.copyString());
     }
@@ -159,6 +73,97 @@ private:
                                                          : slice.getInt());
     }
   }
+};
+template <typename DB>
+class nr_db : public db<DB, nr_db_info_setter>, public nr_db_interface {
+public:
+  typedef db<DB, nr_db_info_setter> base_db_t;
+  nr_db() {}
+  nr_db(const std::string &url, const std::string &usrname,
+        const std::string &passwd, const std::string &dbname)
+      : db<DB, nr_db_info_setter>(url, usrname, passwd, dbname) {}
+
+  virtual void insert_document_to_collection(const nr_info_t &info) {
+    std::string date = info.template get<::neb::date>();
+    std::string address = info.template get<::neb::address>();
+    double median = info.template get<::neb::median>();
+    double weight = info.template get<::neb::weight>();
+    double score = info.template get<::neb::score>();
+    int32_t in_degree = info.template get<::neb::in_degree>();
+    int32_t out_degree = info.template get<::neb::out_degree>();
+    int32_t degrees = info.template get<::neb::degrees>();
+    double in_val = info.template get<::neb::in_val>();
+    double out_val = info.template get<::neb::out_val>();
+    double in_outs = info.template get<::neb::in_outs>();
+
+    const std::string aql = boost::str(
+        boost::format(
+            "upsert {_key:'%1%'} "
+            "insert {_key:'%1%', date:'%2%', address:'%3%', median:%4%, "
+            "weight:%5%, score:%6%, in_degree:%7%, out_degree:%8%, "
+            "degrees:%9%, in_val:%10%, out_val:%11%, in_outs:%12%} "
+            "update {date:'%2%', address:'%3%', median:%4%, weight:%5%, "
+            "score:%6%, in_degree:%7%, out_degree:%8%, degrees:%9%, "
+            "in_val:%10%, out_val:%11%, in_outs:%12%} in nr") %
+        (date + '-' + address) % date % address % median % weight % score %
+        in_degree % out_degree % degrees % in_val % out_val % in_outs);
+    this->aql_query(aql);
+  }
+
+  virtual std::vector<nr_info_t> read_nr_by_date(const std::string &date) {
+    const std::string aql = boost::str(
+        boost::format("for item in nr filter item.date=='%1%' return item") %
+        date);
+    auto resp_ptr = this->aql_query(aql);
+
+    std::vector<nr_info_t> rs;
+    base_db_t::parse_from_response(std::move(resp_ptr), rs);
+    return rs;
+  }
+
+  static std::string to_string(const std::vector<nr_info_t> &rs) {
+    boost::property_tree::ptree root;
+    boost::property_tree::ptree arr;
+
+    for (auto it = rs.begin(); it != rs.end(); it++) {
+      const nr_info_t &info = *it;
+      std::string date = info.template get<::neb::date>();
+      std::string address = info.template get<::neb::address>();
+      double median = info.template get<::neb::median>();
+      double weight = info.template get<::neb::weight>();
+      double score = info.template get<::neb::score>();
+      int32_t in_degree = info.template get<::neb::in_degree>();
+      int32_t out_degree = info.template get<::neb::out_degree>();
+      int32_t degrees = info.template get<::neb::degrees>();
+      double in_val = info.template get<::neb::in_val>();
+      double out_val = info.template get<::neb::out_val>();
+      double in_outs = info.template get<::neb::in_outs>();
+
+      std::unordered_map<std::string, std::string> kv_pair(
+          {{"date", date},
+           {"address", address},
+           {"median", std::to_string(median)},
+           {"weight", std::to_string(weight)},
+           {"score", std::to_string(score)},
+           {"in_degree", std::to_string(in_degree)},
+           {"out_degree", std::to_string(out_degree)},
+           {"degrees", std::to_string(degrees)},
+           {"in_val", std::to_string(in_val)},
+           {"out_val", std::to_string(out_val)},
+           {"in_outs", std::to_string(in_outs)}});
+
+      boost::property_tree::ptree p;
+      for (auto &ele : kv_pair) {
+        p.put(ele.first, ele.second);
+      }
+
+      arr.push_back(std::make_pair(std::string(), p));
+    }
+    root.add_child("nr", arr);
+    return base_db_t::ptree_to_string(root);
+  }
+
+private:
 
 };
 } // namespace neb

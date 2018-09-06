@@ -47,14 +47,55 @@ public:
       const std::string &address) = 0;
 };
 
+struct transaction_db_infosetter {
+  typedef transaction_info_t info_type;
+
+  static void set_info(transaction_info_t &info, const VPackSlice &slice,
+                       const std::string &key) {
+    if (key.compare("status") == 0) {
+      info.template set<::neb::status>(slice.getInt());
+    }
+    if (key.compare("from") == 0) {
+      info.template set<::neb::from>(slice.copyString());
+    }
+    if (key.compare("to") == 0) {
+      info.template set<::neb::to>(slice.copyString());
+    }
+    if (key.compare("tx_value") == 0) {
+      info.template set<::neb::tx_value>(slice.copyString());
+    }
+    if (key.compare("height") == 0) {
+      info.template set<::neb::height>(slice.getInt());
+    }
+    if (key.compare("timestamp") == 0) {
+      info.template set<::neb::timestamp>(slice.copyString());
+    }
+    if (key.compare("type_from") == 0) {
+      info.template set<::neb::type_from>(slice.copyString());
+    }
+    if (key.compare("type_to") == 0) {
+      info.template set<::neb::type_to>(slice.copyString());
+    }
+    if (key.compare("gas_used") == 0) {
+      info.template set<::neb::gas_used>(slice.copyString());
+    }
+    if (key.compare("gas_price") == 0) {
+      info.template set<::neb::gas_price>(slice.copyString());
+    }
+    if (key.compare("contract_address") == 0) {
+      info.template set<::neb::contract_address>(slice.copyString());
+    }
+  }
+};
 template <typename DB>
-class transaction_db : public db<DB, transaction_info_t>,
+class transaction_db : public db<DB, transaction_db_infosetter>,
                        public transaction_db_interface {
 public:
+  typedef db<DB, transaction_db_infosetter> base_db_t;
   transaction_db() {}
   transaction_db(const std::string &url, const std::string &usrname,
                  const std::string &passwd, const std::string &dbname)
-      : db<DB, transaction_info_t>(url, usrname, passwd, dbname) {}
+      : db<DB, transaction_db_infosetter>(url, usrname, passwd, dbname) {}
 
   virtual std::vector<transaction_info_t>
   read_transaction_simplified_from_db_with_duration(block_height_t start_block,
@@ -157,7 +198,7 @@ public:
       arr.push_back(std::make_pair(std::string(), p));
     }
     root.add_child("transactions", arr);
-    return this->ptree_to_string(root);
+    return base_db_t::ptree_to_string(root);
   }
 
 private:
@@ -166,43 +207,6 @@ private:
     std::vector<transaction_info_t> rs;
     this->parse_from_response(std::move(resp_ptr), rs);
     return rs;
-  }
-
-  virtual void set_info(transaction_info_t &info, const VPackSlice &slice,
-                        const std::string &key) {
-    if (key.compare("status") == 0) {
-      info.template set<::neb::status>(slice.getInt());
-    }
-    if (key.compare("from") == 0) {
-      info.template set<::neb::from>(slice.copyString());
-    }
-    if (key.compare("to") == 0) {
-      info.template set<::neb::to>(slice.copyString());
-    }
-    if (key.compare("tx_value") == 0) {
-      info.template set<::neb::tx_value>(slice.copyString());
-    }
-    if (key.compare("height") == 0) {
-      info.template set<::neb::height>(slice.getInt());
-    }
-    if (key.compare("timestamp") == 0) {
-      info.template set<::neb::timestamp>(slice.copyString());
-    }
-    if (key.compare("type_from") == 0) {
-      info.template set<::neb::type_from>(slice.copyString());
-    }
-    if (key.compare("type_to") == 0) {
-      info.template set<::neb::type_to>(slice.copyString());
-    }
-    if (key.compare("gas_used") == 0) {
-      info.template set<::neb::gas_used>(slice.copyString());
-    }
-    if (key.compare("gas_price") == 0) {
-      info.template set<::neb::gas_price>(slice.copyString());
-    }
-    if (key.compare("contract_address") == 0) {
-      info.template set<::neb::contract_address>(slice.copyString());
-    }
   }
 
 }; // end class transaction_db

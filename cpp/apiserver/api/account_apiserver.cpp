@@ -1,10 +1,10 @@
 #include "account_apiserver.h"
 #include "err/err_def.h"
+#include <memory>
 
-account_apiserver::account_apiserver(const std::string &appname,
-                                     size_t cache_size)
+account_apiserver::account_apiserver(const std::string &appname)
     : apiserver(appname) {
-  m_cache_ptr = std::make_unique<account_cache_t>(account_cache_t(cache_size));
+  m_cache_ptr = std::make_unique<account_cache_t>();
   m_ac_ptr = std::make_shared<nebulas_account_db_t>(nebulas_account_db_t(
       std::getenv("DB_URL"), std::getenv("DB_USER_NAME"),
       std::getenv("DB_PASSWORD"), std::getenv("NEBULAS_DB")));
@@ -31,8 +31,7 @@ std::string account_apiserver::on_api_account(
   }
 
   account_cache_t &cache = *m_cache_ptr;
-  neb::account_info_t info;
-  std::vector<neb::account_info_t> rs;
+  std::shared_ptr<neb::account_info_t> info;
 
   if (!cache.get(address, info)) {
     LOG(INFO) << "account cache missed, reading from db";
@@ -40,12 +39,11 @@ std::string account_apiserver::on_api_account(
 
     if (!cache.get(address, info)) {
       LOG(INFO) << "account db missed";
-      return m_ac_ptr->to_string(rs);
+      return err_code_query_response_empty;
     }
   }
 
-  rs.push_back(info);
-  return m_ac_ptr->to_string(rs);
+  return nebulas_account_db_t::account_info_to_string(*info);
 }
 
 void account_apiserver::set_account_cache(account_cache_t &cache,
@@ -55,7 +53,7 @@ void account_apiserver::set_account_cache(account_cache_t &cache,
   LOG(INFO) << "read account by address, size: " << rs.size();
   for (auto it = rs.begin(); it != rs.end(); it++) {
     std::string address = it->template get<::neb::address>();
-    cache.set(address, *it);
+    cache.set(address, std::make_shared<neb::account_info_t>(*it));
   }
   return;
 }
