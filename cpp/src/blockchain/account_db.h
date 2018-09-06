@@ -33,6 +33,8 @@ class account_db_interface {
 public:
   virtual std::vector<account_info_t> read_account_from_db() = 0;
   virtual std::vector<account_info_t>
+  read_account_from_db_sort_by_balance_desc() = 0;
+  virtual std::vector<account_info_t>
   read_account_by_address(const std::string &address) = 0;
   virtual account_balance_t get_account_balance(block_height_t height,
                                                 const std::string &address) = 0;
@@ -62,6 +64,7 @@ struct account_db_info_setter {
     }
   }
 };
+
 template <class DB>
 class account_db : public db<DB, account_db_info_setter>,
                    public account_db_interface {
@@ -82,6 +85,18 @@ public:
 
     std::vector<account_info_t> rs;
     base_db_t::parse_from_response(std::move(resp_ptr), rs);
+    return rs;
+  }
+
+  virtual std::vector<account_info_t>
+  read_account_from_db_sort_by_balance_desc() {
+    std::vector<account_info_t> rs = read_account_from_db();
+    auto cmp = [&](const account_info_t &info1, const account_info_t &info2) {
+      double b1 = std::stod(info1.template get<::neb::balance>());
+      double b2 = std::stod(info2.template get<::neb::balance>());
+      return b1 > b2;
+    };
+    sort(rs.begin(), rs.end(), cmp);
     return rs;
   }
 
@@ -117,10 +132,13 @@ public:
       p.put(ele.first, ele.second);
     }
   }
+
   static std::string account_info_to_string(const account_info_t &info) {
+    boost::property_tree::ptree root;
     boost::property_tree::ptree p;
     convert_account_info_to_ptree(info, p);
-    return base_db_t::ptree_to_string(p);
+    root.add_child("accounts", p);
+    return base_db_t::ptree_to_string(root);
   }
 
   static std::string
