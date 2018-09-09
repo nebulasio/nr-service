@@ -38,7 +38,7 @@ $ cmake .. && make
 
 # Query
 
-  - Query transaction by block height, curl -s  `"http://localhost:6000/transaction?start_block=400100&end_block=400200"`
+  - Query transaction by block height, `curl -s "http://localhost:6000/transaction?start_block=400100&end_block=400200"`
   - Query transaction by address, `curl -s "http://localhost:6000/transaction?address=n1Q6JhXKWXCkyvoqymN4LPd6J1tentyKRVF"`
   - Query account by address, `curl -s "http://localhost:6000/account?address=n1Q6JhXKWXCkyvoqymN4LPd6J1tentyKRVF"`
   - Query nebulas rank by date, `curl -s "http://localhost:6000/nr?date=20180620"`
