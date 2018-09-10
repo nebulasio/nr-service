@@ -182,7 +182,7 @@ void nebulas_account_db::append_account_to_db() {
 
     int32_t ret_type = is_contract_address(address);
     if (ret_type == -1) {
-      continue;
+      return;
     }
     std::string type = (ret_type == 0 ? "normal" : "contract");
 

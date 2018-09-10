@@ -29,7 +29,7 @@ block_height_t get_block_height() {
   std::string ret = get_stdout_from_command(cmd);
   std::vector<std::string> v = split_by_comma(ret, '\n');
 
-  if (v.size() < 1) {
+  if (v.empty()) {
     return -1;
   }
   std::string resp = v[v.size() - 1];
@@ -68,7 +68,7 @@ std::pair<std::string, int> get_account_state(block_height_t height,
   std::string ret = get_stdout_from_command(cmd);
   std::vector<std::string> v = split_by_comma(ret, '\n');
 
-  if (v.size() < 1) {
+  if (v.empty()) {
     return std::make_pair("", -1);
   }
   std::string resp = v[v.size() - 1];
@@ -188,7 +188,7 @@ get_block_transactions_by_height(block_height_t height,
   std::string ret = get_stdout_from_command(cmd);
   std::vector<std::string> v = split_by_comma(ret, '\n');
 
-  if (v.size() < 1) {
+  if (v.empty()) {
     return std::vector<transaction_info_t>();
   }
   std::string resp = v[v.size() - 1];
@@ -224,7 +224,7 @@ std::string get_block_timestamp_by_height(block_height_t height) {
   std::string ret = get_stdout_from_command(cmd);
   std::vector<std::string> v = split_by_comma(ret, '\n');
 
-  if (v.size() < 1) {
+  if (v.empty()) {
     return std::string();
   }
   std::string resp = v[v.size() - 1];
@@ -287,7 +287,7 @@ std::vector<event_t> get_events_by_hash(const std::string &hash,
   std::string ret = get_stdout_from_command(cmd);
   std::vector<std::string> v = split_by_comma(ret, '\n');
 
-  if (v.size() < 1) {
+  if (v.empty()) {
     return std::vector<event_t>();
   }
   std::string resp = v[v.size() - 1];

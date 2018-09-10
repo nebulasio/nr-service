@@ -227,7 +227,7 @@ void nebulas_transaction_db::append_transaction_to_graph() {
     std::string block_timestamp =
         ::neb::nebulas::get_block_timestamp_by_height(h);
     if (block_timestamp.compare(std::string()) == 0) {
-      continue;
+      return;
     }
     std::vector<transaction_info_t> v =
         ::neb::nebulas::get_block_transactions_by_height(h, block_timestamp);
