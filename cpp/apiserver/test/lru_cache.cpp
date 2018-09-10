@@ -46,14 +46,6 @@ void set_cache(neb::lru_cache<neb::block_height_t,
   for (auto it = txs.begin(); it != txs.end(); it++) {
     neb::block_height_t height = it->template get<::neb::height>();
     height_and_txs[height].push_back(*it);
-    // auto ite = height_and_txs.find(height);
-    // if (ite != height_and_txs.end()) {
-    // std::vector<neb::transaction_info_t> &v = ite->second;
-    // v.push_back(*it);
-    //} else {
-    // std::vector<neb::transaction_info_t> v({*it});
-    // height_and_txs.insert(std::make_pair(height, v));
-    //}
   }
 
   for (auto it = height_and_txs.begin(); it != height_and_txs.end(); it++) {
