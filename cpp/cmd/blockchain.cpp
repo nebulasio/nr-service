@@ -100,14 +100,27 @@ void ts_transaction_reader(const nebulas_transaction_db_ptr_t ptr,
   LOG(INFO) << "transaction size: " << txs.size();
 }
 
+void transaction_remove(const nebulas_transaction_db_ptr_t ptr,
+                        neb::block_height_t start_block,
+                        neb::block_height_t end_block) {
+  ptr->remove_success_and_failed_transaction_from_db_with_block_duration(
+      start_block, end_block);
+}
+
 int main(int argc, char *argv[]) {
   nebulas_transaction_db_t tdb(
       std::getenv("DB_URL"), std::getenv("DB_USER_NAME"),
       std::getenv("DB_PASSWORD"), std::getenv("NEBULAS_DB"));
   nebulas_transaction_db_ptr_t tx_ptr =
       std::make_shared<nebulas_transaction_db_t>(tdb);
+
   std::shared_ptr<::arangodb::fuerte::Connection> conn_ptr =
       tx_ptr->db_connection_ptr();
+
+  nebulas_account_db_t adb(std::getenv("DB_URL"), std::getenv("DB_USER_NAME"),
+                           std::getenv("DB_PASSWORD"),
+                           std::getenv("NEBULAS_DB"));
+  nebulas_account_db_ptr_t ac_ptr = std::make_shared<nebulas_account_db_t>(adb);
 
   gflags::ParseCommandLineFlags(&argc, &argv, true);
   neb::block_height_t start_block = FLAGS_start_block;
@@ -115,13 +128,10 @@ int main(int argc, char *argv[]) {
   std::string start_ts = FLAGS_start_ts;
   std::string end_ts = FLAGS_end_ts;
 
-  ts_transaction_reader(tx_ptr, start_ts, end_ts);
+  transaction_remove(tx_ptr, start_block, end_block);
 
-  // nebulas_account_db_t adb(std::getenv("DB_URL"),
-  // std::getenv("DB_USER_NAME"), std::getenv("DB_PASSWORD"),
-  // std::getenv("NEBULAS_DB"));
-  // nebulas_account_db_ptr_t ac_ptr =
-  // std::make_shared<nebulas_account_db_t>(adb); account_reader(ac_ptr,
-  // start_block, end_block);
+  // ts_transaction_reader(tx_ptr, start_ts, end_ts);
+
+  // account_reader(ac_ptr, start_block, end_block);
   return 0;
 }

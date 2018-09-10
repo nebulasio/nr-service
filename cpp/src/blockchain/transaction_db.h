@@ -52,6 +52,9 @@ struct transaction_db_infosetter {
 
   static void set_info(transaction_info_t &info, const VPackSlice &slice,
                        const std::string &key) {
+    if (key.compare("tx_id") == 0) {
+      info.template set<::neb::tx_id>(std::stoi(slice.copyString()));
+    }
     if (key.compare("status") == 0) {
       info.template set<::neb::status>(slice.getInt());
     }
@@ -87,6 +90,7 @@ struct transaction_db_infosetter {
     }
   }
 };
+
 template <typename DB>
 class transaction_db : public db<DB, transaction_db_infosetter>,
                        public transaction_db_interface {
@@ -103,10 +107,11 @@ public:
     const std::string aql = boost::str(
         boost::format(
             "for tx in transaction filter tx.status!=0 and tx.height>=%1% and "
-            "tx.height<=%2% return {status:tx.status, from:tx.from, to:tx.to, "
-            "tx_value:tx.tx_value, height:tx.height, timestamp:tx.timestamp, "
-            "type_from:tx.type_from, type_to:tx.type_to, gas_used:tx.gas_used, "
-            "gas_price:tx.gas_price, contract_address:tx.contract_address}") %
+            "tx.height<=%2% return {tx_id:tx.tx_id, status:tx.status, "
+            "from:tx.from, to:tx.to, tx_value:tx.tx_value, height:tx.height, "
+            "timestamp:tx.timestamp, type_from:tx.type_from, "
+            "type_to:tx.type_to, gas_used:tx.gas_used, gas_price:tx.gas_price, "
+            "contract_address:tx.contract_address}") %
         start_block % end_block);
     auto resp_ptr = this->aql_query(aql);
     return from_response(std::move(resp_ptr));
@@ -156,6 +161,44 @@ public:
         address);
     auto resp_ptr = this->aql_query(aql);
     return from_response(std::move(resp_ptr));
+  }
+
+  virtual void
+  remove_success_and_failed_transaction_from_db_with_block_duration(
+      block_height_t start_block, block_height_t end_block) {
+
+    std::vector<transaction_info_t> txs =
+        read_success_and_failed_transaction_from_db_with_block_duration(
+            start_block, end_block);
+    LOG(INFO) << "txs size: " << txs.size();
+
+    for (auto tx : txs) {
+      int64_t tx_id = tx.template get<::neb::tx_id>();
+
+      const std::string rm_from_tx = boost::str(
+          boost::format("for tx in from_txs filter tx._to=='transaction/%1%' "
+                        "remove tx in from_txs") %
+          tx_id);
+      this->aql_query(rm_from_tx);
+
+      const std::string rm_tx_to = boost::str(
+          boost::format("for tx in txs_to filter tx._from=='transaction/%1%' "
+                        "remove tx in txs_to") %
+          tx_id);
+      this->aql_query(rm_tx_to);
+
+      const std::string rm_height_tx = boost::str(
+          boost::format("for tx in height_txs filter tx._to=='transaction/%1%' "
+                        "remove tx in height_txs") %
+          tx_id);
+      this->aql_query(rm_height_tx);
+    }
+
+    const std::string rm_txs = boost::str(
+        boost::format("for tx in transaction filter tx.height>=%1% and "
+                      "tx.height<=%2% remove tx in transaction") %
+        start_block % end_block);
+    this->aql_query(rm_txs);
   }
 
   static std::string
