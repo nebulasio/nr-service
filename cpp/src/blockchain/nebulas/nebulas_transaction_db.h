@@ -18,8 +18,7 @@ private:
       const std::vector<transaction_info_t> &rs);
   template <class T>
   void insert_documents_to_collection(const std::string &collection_name,
-                                      const std::vector<T> &documents,
-                                      int32_t payload_size = 50);
+                                      const std::vector<T> &documents);
   template <class T>
   void insert_document(VPackBuilder &builder_arr,
                        const std::string &collection_name, const T &document);

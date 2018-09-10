@@ -185,8 +185,7 @@ void nebulas_transaction_db::insert_document(VPackBuilder &builder_arr,
 
 template <class T>
 void nebulas_transaction_db::insert_documents_to_collection(
-    const std::string &collection_name, const std::vector<T> &documents,
-    int32_t payload_size) {
+    const std::string &collection_name, const std::vector<T> &documents) {
 
   auto request = ::arangodb::fuerte::createRequest(
       ::arangodb::fuerte::RestVerb::Post,
