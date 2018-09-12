@@ -2,7 +2,6 @@
 
 #include "apiserver.h"
 #include "blockchain.h"
-#include "cache/lru_cache.h"
 
 typedef neb::lru_cache<std::string, std::shared_ptr<neb::account_info_t>>
     account_cache_t;

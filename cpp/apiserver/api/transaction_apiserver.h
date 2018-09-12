@@ -2,7 +2,6 @@
 
 #include "apiserver.h"
 #include "blockchain.h"
-#include "cache/lru_cache.h"
 
 typedef neb::lru_cache<neb::block_height_t,
                        std::shared_ptr<std::vector<neb::transaction_info_t>>>

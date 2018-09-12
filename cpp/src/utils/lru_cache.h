@@ -5,7 +5,6 @@
 #include <list>
 #include <mutex>
 #include <thread>
-#include <unordered_set>
 
 namespace neb {
 
@@ -25,7 +24,7 @@ public:
       }
     });
   }
-  virtual ~lru_cache(){
+  virtual ~lru_cache() {
     m_thread_exit_flag = 1;
     m_thread->join();
   };
