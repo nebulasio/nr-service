@@ -107,7 +107,7 @@ public:
     const std::string aql = boost::str(
         boost::format(
             "for tx in transaction filter tx.status!=0 and tx.height>=%1% and "
-            "tx.height<=%2% return {tx_id:tx.tx_id, status:tx.status, "
+            "tx.height<=%2% return {tx_id:tx._key, status:tx.status, "
             "from:tx.from, to:tx.to, tx_value:tx.tx_value, height:tx.height, "
             "timestamp:tx.timestamp, type_from:tx.type_from, "
             "type_to:tx.type_to, gas_used:tx.gas_used, gas_price:tx.gas_price, "
@@ -123,7 +123,7 @@ public:
     const std::string aql = boost::str(
         boost::format(
             "for tx in transaction filter tx.height>=%1% and tx.height<=%2% "
-            "return {tx_id:tx.tx_id, status:tx.status, from:tx.from, to:tx.to, "
+            "return {tx_id:tx._key, status:tx.status, from:tx.from, to:tx.to, "
             "tx_value:tx.tx_value, height:tx.height, timestamp:tx.timestamp, "
             "type_from:tx.type_from, type_to:tx.type_to, gas_used:tx.gas_used, "
             "gas_price:tx.gas_price, contract_address:tx.contract_address}") %
@@ -138,7 +138,7 @@ public:
     const std::string aql = boost::str(
         boost::format(
             "for tx in transaction filter tx.timestamp>='%1%' and "
-            "tx.timestamp<='%2%' return {tx_id:tx.tx_id, status:tx.status, "
+            "tx.timestamp<='%2%' return {tx_id:tx._key, status:tx.status, "
             "from:tx.from, to:tx.to, tx_value:tx.tx_value, height:tx.height, "
             "timestamp:tx.timestamp, type_from:tx.type_from, "
             "type_to:tx.type_to, gas_used:tx.gas_used, gas_price:tx.gas_price, "
@@ -154,7 +154,7 @@ public:
     const std::string aql = boost::str(
         boost::format(
             "for tx in transaction filter tx.from=='%1%' or tx.to=='%1%'"
-            "return {tx_id:tx.tx_id, status:tx.status, from:tx.from, to:tx.to, "
+            "return {tx_id:tx._key, status:tx.status, from:tx.from, to:tx.to, "
             "tx_value:tx.tx_value, height:tx.height, timestamp:tx.timestamp, "
             "type_from:tx.type_from, type_to:tx.type_to, gas_used:tx.gas_used, "
             "gas_price:tx.gas_price, contract_address:tx.contract_address}") %
