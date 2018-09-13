@@ -9,4 +9,6 @@ add_library(tga_engine SHARED
   blockchain/nebulas/nebulas_transaction_db.cpp
   blockchain/nebulas/nebulas_api.cpp
   blockchain/nebulas/nebulas_account_db.cpp
+  blockchain/eth/eth_api.cpp
+  blockchain/eth/eth_transaction_db.cpp
   nr/nebulas_rank.cpp)

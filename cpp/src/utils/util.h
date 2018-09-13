@@ -23,4 +23,8 @@ bool is_number(const std::string &s);
 
 time_t get_universal_timestamp();
 std::string time_t_to_date(time_t t);
+
+std::string to_dec(const std::string &hex_str);
+std::string to_hex(const std::string &dec_str);
+
 } // namespace neb

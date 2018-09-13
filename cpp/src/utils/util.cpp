@@ -120,4 +120,19 @@ std::string time_t_to_date(time_t t) {
   return replace_month_str_to_month_of_year(s);
 }
 
+std::string to_dec(const std::string &hex_str) {
+  std::stringstream ss;
+  ss << std::hex << hex_str;
+  int128_t tmp;
+  ss >> tmp;
+  return boost::lexical_cast<std::string>(tmp);
+}
+
+std::string to_hex(const std::string &dec_str) {
+  int128_t tmp = boost::lexical_cast<int128_t>(dec_str);
+  std::stringstream ss;
+  ss << "0x" << std::hex << tmp;
+  return boost::algorithm::to_lower_copy(ss.str());
+}
+
 } // namespace neb

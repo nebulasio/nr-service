@@ -23,7 +23,8 @@ namespace neb {
 typedef int64_t block_height_t;
 typedef std::string account_address_t;
 typedef std::string contract_address_t;
-typedef boost::multiprecision::int128_t account_balance_t;
+typedef boost::multiprecision::int128_t int128_t;
+typedef int128_t account_balance_t;
 typedef int32_t account_type_t;
 
 struct nebulas_db {};
