@@ -39,12 +39,16 @@ public:
   virtual std::vector<transaction_info_t>
   read_success_and_failed_transaction_from_db_with_block_duration(
       block_height_t start_block, block_height_t end_block) = 0;
+
   virtual std::vector<transaction_info_t>
   read_success_and_failed_transaction_from_db_with_ts_duration(
       const std::string &start_ts, const std::string &end_ts) = 0;
   virtual std::vector<transaction_info_t>
   read_success_and_failed_transaction_from_db_with_address(
       const std::string &address) = 0;
+
+  virtual std::string
+  transaction_infos_to_string(const std::vector<transaction_info_t> &rs) = 0;
 };
 
 struct transaction_db_infosetter {
@@ -201,7 +205,7 @@ public:
     this->aql_query(rm_txs);
   }
 
-  static std::string
+  virtual std::string
   transaction_infos_to_string(const std::vector<transaction_info_t> &rs) {
     boost::property_tree::ptree root;
     boost::property_tree::ptree arr;

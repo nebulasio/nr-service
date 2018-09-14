@@ -26,6 +26,7 @@ class nr_db_interface {
 public:
   virtual void insert_document_to_collection(const nr_info_t &info) = 0;
   virtual std::vector<nr_info_t> read_nr_by_date(const std::string &date) = 0;
+  virtual std::string nr_infos_to_string(const std::vector<nr_info_t> &rs) = 0;
 };
 
 struct nr_db_info_setter {
@@ -122,7 +123,7 @@ public:
     return rs;
   }
 
-  static std::string nr_infos_to_string(const std::vector<nr_info_t> &rs) {
+  virtual std::string nr_infos_to_string(const std::vector<nr_info_t> &rs) {
     boost::property_tree::ptree root;
     boost::property_tree::ptree arr;
 

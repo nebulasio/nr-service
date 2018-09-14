@@ -36,11 +36,14 @@ public:
   read_account_from_db_sort_by_balance_desc() = 0;
   virtual std::vector<account_info_t>
   read_account_by_address(const std::string &address) = 0;
+
   virtual account_balance_t get_account_balance(block_height_t height,
                                                 const std::string &address) = 0;
   virtual double get_normalized_value(double value) = 0;
   virtual void set_height_address_val(int64_t start_block,
                                       int64_t end_block) = 0;
+
+  virtual std::string account_info_to_string(const account_info_t &info) = 0;
 };
 
 struct account_db_info_setter {
@@ -231,26 +234,10 @@ public:
     LOG(INFO) << "template account_db, init height address value finish";
   }
 
-  static std::string account_info_to_string(const account_info_t &info) {
+  virtual std::string account_info_to_string(const account_info_t &info) {
     boost::property_tree::ptree p;
     convert_account_info_to_ptree(info, p);
     return base_db_t::ptree_to_string(p);
-  }
-
-  static std::string
-  account_infos_to_string(const std::vector<account_info_t> &rs) {
-    boost::property_tree::ptree root;
-    boost::property_tree::ptree arr;
-
-    for (auto it = rs.begin(); it != rs.end(); it++) {
-      const account_info_t &info = *it;
-      boost::property_tree::ptree p;
-      convert_account_info_to_ptree(info, p);
-
-      arr.push_back(std::make_pair(std::string(), p));
-    }
-    root.add_child("accounts", arr);
-    return base_db_t::ptree_to_string(root);
   }
 
 private:

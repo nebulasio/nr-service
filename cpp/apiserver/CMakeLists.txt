@@ -2,9 +2,7 @@ include_directories(${PROJECT_SOURCE_DIR}/apiserver)
 
 set(lib_src
   apiserver.cpp
-  api/transaction_apiserver.cpp
-  api/account_apiserver.cpp
-  api/nr_apiserver.cpp)
+  )
 
 pybind11_add_module(nebserver
   pybind11_module.cpp
