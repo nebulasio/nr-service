@@ -2,30 +2,28 @@
 #include "blockchain.h"
 #include "utils.h"
 
+DEFINE_string(chain, "nebulas", "chain name, nebulas or eth");
 DEFINE_int64(start_block, 0, "the start block height");
 DEFINE_int64(end_block, 1, "the end block height");
 
+typedef neb::transaction_db_interface transaction_db_t;
+typedef std::shared_ptr<transaction_db_t> tdb_ptr_t;
+typedef neb::account_db_interface account_db_t;
+typedef std::shared_ptr<account_db_t> adb_ptr_t;
+typedef neb::nr_db_interface nr_db_t;
+typedef std::shared_ptr<nr_db_t> ndb_ptr_t;
+
 typedef neb::transaction_db<neb::nebulas_db> nebulas_transaction_db_t;
-typedef std::shared_ptr<nebulas_transaction_db_t> neb_tdb_ptr_t;
 typedef neb::account_db<neb::nebulas_db> nebulas_account_db_t;
-typedef std::shared_ptr<nebulas_account_db_t> neb_adb_ptr_t;
 typedef neb::nr_db<neb::nebulas_db> nebulas_nr_db_t;
-typedef std::shared_ptr<nebulas_nr_db_t> neb_ndb_ptr_t;
 
-void nebulas_service(neb::block_height_t start_block,
+typedef neb::transaction_db<neb::eth_db> eth_transaction_db_t;
+typedef neb::account_db<neb::eth_db> eth_account_db_t;
+typedef neb::nr_db<neb::eth_db> eth_nr_db_t;
+
+void nebulas_service(const tdb_ptr_t tdb_ptr, const adb_ptr_t adb_ptr,
+                     neb::block_height_t start_block,
                      neb::block_height_t end_block) {
-  nebulas_transaction_db_t tdb(
-      std::getenv("DB_URL"), std::getenv("DB_USER_NAME"),
-      std::getenv("DB_PASSWORD"), std::getenv("NEBULAS_DB"));
-  neb_tdb_ptr_t tdb_ptr = std::make_shared<nebulas_transaction_db_t>(tdb);
-  auto txs =
-      tdb_ptr->read_success_and_failed_transaction_from_db_with_block_duration(
-          start_block, end_block);
-
-  nebulas_account_db_t adb(std::getenv("DB_URL"), std::getenv("DB_USER_NAME"),
-                           std::getenv("DB_PASSWORD"),
-                           std::getenv("NEBULAS_DB"));
-  neb_adb_ptr_t adb_ptr = std::make_shared<nebulas_account_db_t>(adb);
 
   neb::rank_params_t rp{2000.0, 200000.0, 100.0, 1000.0, 0.75, 3.14};
   neb::nebulas_rank nr(tdb_ptr, adb_ptr, rp, start_block, end_block);
@@ -40,9 +38,8 @@ void nebulas_service(neb::block_height_t start_block,
   }
 }
 
-void nebulas_rank_detail(const neb_tdb_ptr_t tdb_ptr,
-                         const neb_adb_ptr_t adb_ptr,
-                         const neb_ndb_ptr_t ndb_ptr, const std::string &date,
+void nebulas_rank_detail(const tdb_ptr_t tdb_ptr, const adb_ptr_t adb_ptr,
+                         const ndb_ptr_t ndb_ptr, const std::string &date,
                          neb::block_height_t start_block,
                          neb::block_height_t end_block) {
   auto txs = tdb_ptr->read_transaction_simplified_from_db_with_duration(
@@ -141,21 +138,8 @@ void nebulas_rank_detail(const neb_tdb_ptr_t tdb_ptr,
   }
 }
 
-void write_to_nebulas_rank_db() {
-
-  nebulas_transaction_db_t tdb(
-      std::getenv("DB_URL"), std::getenv("DB_USER_NAME"),
-      std::getenv("DB_PASSWORD"), std::getenv("NEBULAS_DB"));
-  neb_tdb_ptr_t tdb_ptr = std::make_shared<nebulas_transaction_db_t>(tdb);
-
-  nebulas_account_db_t adb(std::getenv("DB_URL"), std::getenv("DB_USER_NAME"),
-                           std::getenv("DB_PASSWORD"),
-                           std::getenv("NEBULAS_DB"));
-  neb_adb_ptr_t adb_ptr = std::make_shared<nebulas_account_db_t>(adb);
-
-  nebulas_nr_db_t ndb(std::getenv("DB_URL"), std::getenv("DB_USER_NAME"),
-                      std::getenv("DB_PASSWORD"), std::getenv("NEBULAS_DB"));
-  neb_ndb_ptr_t ndb_ptr = std::make_shared<nebulas_nr_db_t>(ndb);
+void write_to_nebulas_rank_db(const tdb_ptr_t tdb_ptr, const adb_ptr_t adb_ptr,
+                              const ndb_ptr_t ndb_ptr) {
 
   time_t seconds_of_day = 24 * 60 * 60;
   time_t seconds_of_minute = 60;
@@ -188,19 +172,69 @@ void write_to_nebulas_rank_db() {
   return;
 }
 
+struct db_ptr_set_t {
+  tdb_ptr_t tdb_ptr;
+  adb_ptr_t adb_ptr;
+  ndb_ptr_t ndb_ptr;
+};
+
+db_ptr_set_t get_db_ptr_set(const std::string &chain) {
+  std::string db_url = std::getenv("DB_URL");
+  std::string db_usrname = std::getenv("DB_USER_NAME");
+  std::string db_passwd = std::getenv("DB_PASSWORD");
+
+  if (chain.compare("nebulas") != 0 || chain.compare("eth") != 0) {
+    LOG(INFO) << "invalid chain, type 'nebulas' or 'eth'";
+    exit(-1);
+  }
+
+  if (chain.compare("nebulas") == 0) {
+    std::string db_name = std::getenv("NEBULAS_DB");
+
+    nebulas_transaction_db_t tdb(db_url, db_usrname, db_passwd, db_name);
+    nebulas_account_db_t adb(db_url, db_usrname, db_passwd, db_name);
+    nebulas_nr_db_t ndb(db_url, db_usrname, db_passwd, db_name);
+
+    tdb_ptr_t tdb_ptr = std::make_shared<nebulas_transaction_db_t>(tdb);
+    adb_ptr_t adb_ptr = std::make_shared<nebulas_account_db_t>(adb);
+    ndb_ptr_t ndb_ptr = std::make_shared<nebulas_nr_db_t>(ndb);
+
+    return db_ptr_set_t{tdb_ptr, adb_ptr, ndb_ptr};
+  }
+
+  std::string db_name = std::getenv("ETH_DB");
+
+  eth_transaction_db_t tdb(db_url, db_usrname, db_passwd, db_name);
+  eth_account_db_t adb(db_url, db_usrname, db_passwd, db_name);
+  eth_nr_db_t ndb(db_url, db_usrname, db_passwd, db_name);
+
+  tdb_ptr_t tdb_ptr = std::make_shared<eth_transaction_db_t>(tdb);
+  adb_ptr_t adb_ptr = std::make_shared<eth_account_db_t>(adb);
+  ndb_ptr_t ndb_ptr = std::make_shared<eth_nr_db_t>(ndb);
+
+  return db_ptr_set_t{tdb_ptr, adb_ptr, ndb_ptr};
+}
+
 int main(int argc, char *argv[]) {
   gflags::ParseCommandLineFlags(&argc, &argv, true);
+  std::string chain = FLAGS_chain;
   int64_t start_block = FLAGS_start_block;
   int64_t end_block = FLAGS_end_block;
 
-  // LOG(INFO) << start_block << ',' << end_block;
-  // nebulas_service(start_block, end_block);
+  db_ptr_set_t db_ptr_set = get_db_ptr_set(chain);
+  tdb_ptr_t tdb_ptr = db_ptr_set.tdb_ptr;
+  adb_ptr_t adb_ptr = db_ptr_set.adb_ptr;
+  ndb_ptr_t ndb_ptr = db_ptr_set.ndb_ptr;
+
+  LOG(INFO) << start_block << ',' << end_block;
+  nebulas_service(tdb_ptr, adb_ptr, start_block, end_block);
+  return 0;
 
   time_t seconds_of_day = 24 * 60 * 60;
   while (true) {
     time_t time_now = neb::get_universal_timestamp();
     if (time_now % seconds_of_day < 60) {
-      write_to_nebulas_rank_db();
+      write_to_nebulas_rank_db(tdb_ptr, adb_ptr, ndb_ptr);
       LOG(INFO) << "waiting...";
     }
     boost::asio::io_service io;
