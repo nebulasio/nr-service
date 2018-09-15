@@ -16,19 +16,6 @@ typedef ntarray<address, balance, account_type, create_at, height>
     account_table_t;
 typedef typename account_table_t::row_type account_info_t;
 
-namespace internal {
-template <typename TS> struct account_db_traits {};
-template <> struct account_db_traits<nebulas_db> {
-  static double normalize_value(double val) {
-    nebulas::nas to_nas = nebulas::nas_cast<nebulas::nas>(nebulas::wei(val));
-    return to_nas.value();
-  }
-};
-template <> struct account_db_traits<eth_db> {
-  static double normalize_value(double val) { return val; }
-};
-} // namespace internal
-
 class account_db_interface {
 public:
   virtual std::vector<account_info_t> read_account_from_db() = 0;
@@ -146,7 +133,8 @@ public:
   }
 
   virtual double get_normalized_value(double value) {
-    return ::neb::internal::account_db_traits<DB>::normalize_value(value);
+    nebulas::nas to_nas = nebulas::nas_cast<nebulas::nas>(nebulas::wei(value));
+    return to_nas.value();
   }
 
   virtual void set_height_address_val(int64_t start_block, int64_t end_block) {

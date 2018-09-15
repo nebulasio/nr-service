@@ -92,6 +92,9 @@ struct transaction_db_infosetter {
     if (key.compare("contract_address") == 0) {
       info.template set<::neb::contract_address>(slice.copyString());
     }
+    if (key.compare("tx_type") == 0) {
+      info.template set<::neb::tx_type>(slice.copyString());
+    }
   }
 };
 
@@ -115,7 +118,7 @@ public:
             "from:tx.from, to:tx.to, tx_value:tx.tx_value, height:tx.height, "
             "timestamp:tx.timestamp, type_from:tx.type_from, "
             "type_to:tx.type_to, gas_used:tx.gas_used, gas_price:tx.gas_price, "
-            "contract_address:tx.contract_address}") %
+            "contract_address:tx.contract_address, tx_type:tx.tx_type}") %
         start_block % end_block);
     auto resp_ptr = this->aql_query(aql);
     return from_response(std::move(resp_ptr));
@@ -130,7 +133,8 @@ public:
             "return {tx_id:tx._key, status:tx.status, from:tx.from, to:tx.to, "
             "tx_value:tx.tx_value, height:tx.height, timestamp:tx.timestamp, "
             "type_from:tx.type_from, type_to:tx.type_to, gas_used:tx.gas_used, "
-            "gas_price:tx.gas_price, contract_address:tx.contract_address}") %
+            "gas_price:tx.gas_price, contract_address:tx.contract_address, "
+            "tx_type:tx.tx_type}") %
         start_block % end_block);
     auto resp_ptr = this->aql_query(aql);
     return from_response(std::move(resp_ptr));
@@ -146,7 +150,7 @@ public:
             "from:tx.from, to:tx.to, tx_value:tx.tx_value, height:tx.height, "
             "timestamp:tx.timestamp, type_from:tx.type_from, "
             "type_to:tx.type_to, gas_used:tx.gas_used, gas_price:tx.gas_price, "
-            "contract_address:tx.contract_address}") %
+            "contract_address:tx.contract_address, tx_type:tx.tx_type}") %
         start_ts % end_ts);
     auto resp_ptr = this->aql_query(aql);
     return from_response(std::move(resp_ptr));
@@ -157,11 +161,12 @@ public:
       const std::string &address) {
     const std::string aql = boost::str(
         boost::format(
-            "for tx in transaction filter tx.from=='%1%' or tx.to=='%1%'"
+            "for tx in transaction filter tx.from=='%1%' or tx.to=='%1%' "
             "return {tx_id:tx._key, status:tx.status, from:tx.from, to:tx.to, "
             "tx_value:tx.tx_value, height:tx.height, timestamp:tx.timestamp, "
             "type_from:tx.type_from, type_to:tx.type_to, gas_used:tx.gas_used, "
-            "gas_price:tx.gas_price, contract_address:tx.contract_address}") %
+            "gas_price:tx.gas_price, contract_address:tx.contract_address, "
+            "tx_type:tx.tx_type}") %
         address);
     auto resp_ptr = this->aql_query(aql);
     return from_response(std::move(resp_ptr));
@@ -235,6 +240,7 @@ private:
     std::string gas_used = info.template get<::neb::gas_used>();
     std::string gas_price = info.template get<::neb::gas_price>();
     std::string contract_address = info.template get<::neb::contract_address>();
+    std::string tx_type = info.template get<::neb::tx_type>();
 
     std::unordered_map<std::string, std::string> kv_pair(
         {{"status", std::to_string(status)},
@@ -247,7 +253,8 @@ private:
          {"type_to", type_to},
          {"gas_used", gas_used},
          {"gas_price", gas_price},
-         {"contract_address", contract_address}});
+         {"contract_address", contract_address},
+         {"tx_type", tx_type}});
 
     for (auto &ele : kv_pair) {
       p.put(ele.first, ele.second);

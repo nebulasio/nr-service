@@ -9,5 +9,6 @@
 #include "blockchain/nebulas/nebulas_currency.h"
 #include "blockchain/nebulas/nebulas_transaction_db.h"
 
+#include "blockchain/eth/eth_account_db.h"
 #include "blockchain/eth/eth_api.h"
 #include "blockchain/eth/eth_transaction_db.h"
