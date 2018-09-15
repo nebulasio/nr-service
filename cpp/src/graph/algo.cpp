@@ -361,7 +361,7 @@ merge_graphs(const std::vector<transaction_graph_ptr> &graphs) {
 }
 
 void merge_topk_edges_with_same_from_and_same_to(
-    transaction_graph::internal_graph_t &graph, int k) {
+    transaction_graph::internal_graph_t &graph, uint32_t k) {
 
   typedef typename boost::graph_traits<
       transaction_graph::internal_graph_t>::vertex_iterator viterator_t;

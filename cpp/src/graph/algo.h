@@ -22,7 +22,7 @@ transaction_graph_ptr
 merge_graphs(const std::vector<transaction_graph_ptr> &graphs);
 
 void merge_topk_edges_with_same_from_and_same_to(
-    transaction_graph::internal_graph_t &graph, int k = 3);
+    transaction_graph::internal_graph_t &graph, uint32_t k = 3);
 
 struct in_out_val {
   double in_val;
