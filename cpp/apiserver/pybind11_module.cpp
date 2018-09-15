@@ -33,4 +33,18 @@ PYBIND11_MODULE(nebserver, m) {
   pybind11::class_<nr_apiserver<neb::nebulas_db>>(m, "nebulas_nr_apiserver")
       .def(pybind11::init<const std::string &>())
       .def("on_api_nr", &nr_apiserver<neb::nebulas_db>::on_api_nr);
+
+  pybind11::class_<transaction_apiserver<neb::eth_db>>(
+      m, "eth_transaction_apiserver")
+      .def(pybind11::init<const std::string &>())
+      .def("on_api_transaction",
+           &transaction_apiserver<neb::eth_db>::on_api_transaction);
+
+  pybind11::class_<account_apiserver<neb::eth_db>>(m, "eth_account_apiserver")
+      .def(pybind11::init<const std::string &>())
+      .def("on_api_account", &account_apiserver<neb::eth_db>::on_api_account);
+
+  pybind11::class_<nr_apiserver<neb::eth_db>>(m, "eth_nr_apiserver")
+      .def(pybind11::init<const std::string &>())
+      .def("on_api_nr", &nr_apiserver<neb::eth_db>::on_api_nr);
 }

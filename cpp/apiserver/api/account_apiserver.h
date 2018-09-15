@@ -18,7 +18,7 @@ template <> struct account_apiserver_traits<neb::nebulas_db> {
         std::getenv("DB_PASSWORD"), std::getenv("NEBULAS_DB"));
   }
   static bool is_address_valid(const std::string &address) {
-    return ::neb::nebulas::is_contract_address(address) < 0 ? false : true;
+    return ::neb::nebulas::is_contract_address(address) >= 0;
   }
 };
 template <> struct account_apiserver_traits<neb::eth_db> {
@@ -28,7 +28,11 @@ template <> struct account_apiserver_traits<neb::eth_db> {
         std::getenv("DB_URL"), std::getenv("DB_USER_NAME"),
         std::getenv("DB_PASSWORD"), std::getenv("ETH_DB"));
   }
-  static bool is_address_valid(const std::string &address) { return false; }
+  static bool is_address_valid(const std::string &address) {
+    std::string address_type = ::neb::eth::get_address_type(address);
+    return address_type.compare("normal") == 0 ||
+           address_type.compare("contract") == 0;
+  }
 };
 
 template <class DB> class account_apiserver : public apiserver {
