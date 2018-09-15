@@ -24,7 +24,7 @@ typedef typename nr_table_t::row_type nr_info_t;
 
 class nr_db_interface {
 public:
-  virtual void insert_document_to_collection(const nr_info_t &info) = 0;
+  virtual void insert_date_nrs(const std::vector<nr_info_t> &infos) = 0;
   virtual std::vector<nr_info_t> read_nr_by_date(const std::string &date) = 0;
   virtual std::string nr_infos_to_string(const std::vector<nr_info_t> &rs) = 0;
 };
@@ -85,31 +85,22 @@ public:
         const std::string &passwd, const std::string &dbname)
       : db<DB, nr_db_info_setter>(url, usrname, passwd, dbname) {}
 
-  virtual void insert_document_to_collection(const nr_info_t &info) {
-    std::string date = info.template get<::neb::date>();
-    std::string address = info.template get<::neb::address>();
-    double median = info.template get<::neb::median>();
-    double weight = info.template get<::neb::weight>();
-    double score = info.template get<::neb::score>();
-    int32_t in_degree = info.template get<::neb::in_degree>();
-    int32_t out_degree = info.template get<::neb::out_degree>();
-    int32_t degrees = info.template get<::neb::degrees>();
-    double in_val = info.template get<::neb::in_val>();
-    double out_val = info.template get<::neb::out_val>();
-    double in_outs = info.template get<::neb::in_outs>();
+  virtual void insert_date_nrs(const std::vector<nr_info_t> &infos) {
 
-    const std::string aql = boost::str(
-        boost::format(
-            "upsert {_key:'%1%'} "
-            "insert {_key:'%1%', date:'%2%', address:'%3%', median:%4%, "
-            "weight:%5%, score:%6%, in_degree:%7%, out_degree:%8%, "
-            "degrees:%9%, in_val:%10%, out_val:%11%, in_outs:%12%} "
-            "update {date:'%2%', address:'%3%', median:%4%, weight:%5%, "
-            "score:%6%, in_degree:%7%, out_degree:%8%, degrees:%9%, "
-            "in_val:%10%, out_val:%11%, in_outs:%12%} in nr") %
-        (date + '-' + address) % date % address % median % weight % score %
-        in_degree % out_degree % degrees % in_val % out_val % in_outs);
-    this->aql_query(aql);
+    auto request = ::arangodb::fuerte::createRequest(
+        ::arangodb::fuerte::RestVerb::Post,
+        "/_db/" + this->m_dbname + "/_api/document/nr");
+
+    VPackBuilder builder_arr;
+    builder_arr.openArray();
+
+    for (auto info : infos) {
+      insert_nr(builder_arr, info);
+    }
+
+    builder_arr.close();
+    request->addVPack(builder_arr.slice());
+    this->m_connection_ptr->sendRequest(std::move(request));
   }
 
   virtual std::vector<nr_info_t> read_nr_by_date(const std::string &date) {
@@ -138,6 +129,31 @@ public:
   }
 
 private:
+  static void insert_nr(VPackBuilder &builder_arr, const nr_info_t &info) {
+    std::string date = info.template get<::neb::date>();
+    std::string address = info.template get<::neb::address>();
+
+    auto it = &info;
+
+    VPackBuilder builder;
+    builder.openObject();
+    builder.add("_key", VPackValue(date + '-' + address));
+    builder.add("date", VPackValue(date));
+    builder.add("address", VPackValue(address));
+    builder.add("median", VPackValue(it->template get<::neb::median>()));
+    builder.add("weight", VPackValue(it->template get<::neb::weight>()));
+    builder.add("score", VPackValue(it->template get<::neb::score>()));
+    builder.add("in_degree", VPackValue(it->template get<::neb::in_degree>()));
+    builder.add("out_degree",
+                VPackValue(it->template get<::neb::out_degree>()));
+    builder.add("degrees", VPackValue(it->template get<::neb::degrees>()));
+    builder.add("in_val", VPackValue(it->template get<::neb::in_val>()));
+    builder.add("out_val", VPackValue(it->template get<::neb::out_val>()));
+    builder.add("in_outs", VPackValue(it->template get<::neb::in_outs>()));
+    builder.close();
+    builder_arr.add(builder.slice());
+  }
+
   static void convert_nr_info_to_ptree(const nr_info_t &info,
                                        boost::property_tree::ptree &p) {
     std::string date = info.template get<::neb::date>();
