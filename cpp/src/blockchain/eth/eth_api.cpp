@@ -7,6 +7,39 @@
 namespace neb {
 namespace eth {
 
+std::string json_parse_eth_balance(const std::string &json) {
+  boost::property_tree::ptree pt;
+  std::stringstream ss(json);
+
+  try {
+    boost::property_tree::read_json(ss, pt);
+  } catch (boost::property_tree::ptree_error &e) {
+    exit(-1);
+  }
+
+  return pt.get<std::string>("result");
+}
+
+std::string get_address_balance(const std::string &address,
+                                const std::string &hex_height) {
+  std::string cmd = boost::str(
+      boost::format("curl -s --data "
+                    "'{\"method\":\"eth_getBalance\",\"params\":[\"%1%\",\"%2%"
+                    "\"],\"id\":1,\"jsonrpc\":\"2.0\"}' -H \"Content-Type: "
+                    "application/json\" -X POST localhost:8545") %
+      address % hex_height);
+  std::string ret = get_stdout_from_command(cmd);
+  std::vector<std::string> v = split_by_comma(ret, '\n');
+
+  if (v.empty()) {
+    LOG(INFO) << "eth get balance empty";
+    exit(-1);
+  }
+  std::string resp = v.back();
+
+  return json_parse_eth_balance(resp);
+}
+
 std::string json_parse_eth_code(const std::string &json) {
   boost::property_tree::ptree pt;
   std::stringstream ss(json);
@@ -17,8 +50,9 @@ std::string json_parse_eth_code(const std::string &json) {
     exit(-1);
   }
 
-  std::string result = pt.get<std::string>("result");
-  return result;
+  boost::property_tree::ptree::const_assoc_iterator it = pt.find("error");
+  return it == pt.not_found() ? pt.get<std::string>("result")
+                              : std::string("invalid");
 }
 
 std::string eth_get_code(const std::string &address) {
@@ -46,6 +80,9 @@ std::string get_address_type(const std::string &address) {
     return std::string("none");
   }
   std::string eth_code = eth_get_code(address);
+  if (eth_code.compare("invalid") == 0) {
+    return eth_code;
+  }
   return eth_code.compare("0x") == 0 ? std::string("normal")
                                      : std::string("contract");
 }
