@@ -230,6 +230,10 @@ nebulas_rank::get_account_score_service() {
   filter_empty_transactions_this_interval(txs);
 
   std::vector<transaction_graph_ptr> tgs = build_transaction_graphs(txs);
+  if (tgs.empty()) {
+    LOG(INFO) << "empty transaction graph";
+    return std::unordered_map<std::string, double>();
+  }
   LOG(INFO) << "we have " << tgs.size() << " subgraphs.";
 
   for (auto it = tgs.begin(); it != tgs.end(); it++) {
