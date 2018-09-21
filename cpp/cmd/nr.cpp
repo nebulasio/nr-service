@@ -5,6 +5,8 @@
 DEFINE_string(chain, "nebulas", "chain name, nebulas or eth");
 DEFINE_int64(start_block, 0, "the start block height");
 DEFINE_int64(end_block, 1, "the end block height");
+DEFINE_int32(start_ts, 0, "the first day end timestamp");
+DEFINE_int32(end_ts, 1, "the last day end timestamp");
 
 typedef neb::transaction_db_interface transaction_db_t;
 typedef std::shared_ptr<transaction_db_t> tdb_ptr_t;
@@ -32,32 +34,24 @@ void nebulas_service(const tdb_ptr_t tdb_ptr, const adb_ptr_t adb_ptr,
       nr.get_account_score_service();
   LOG(INFO) << account_rank.size();
 
-  LOG(INFO) << "address,score";
-  for (auto it = account_rank.begin(); it != account_rank.end(); it++) {
-    LOG(INFO) << it->first << "," << it->second;
-  }
+  // LOG(INFO) << "address,score";
+  // for (auto it = account_rank.begin(); it != account_rank.end(); it++) {
+  // LOG(INFO) << it->first << "," << it->second;
+  //}
 }
 
 void nebulas_rank_detail(const tdb_ptr_t tdb_ptr, const adb_ptr_t adb_ptr,
                          const ndb_ptr_t ndb_ptr, const std::string &date,
                          neb::block_height_t start_block,
                          neb::block_height_t end_block) {
-  auto txs = tdb_ptr->read_transaction_simplified_from_db_with_duration(
-      start_block, end_block);
   LOG(INFO) << "start block: " << start_block << " , end block: " << end_block;
-  LOG(INFO) << "transaction size: " << txs.size();
   neb::rank_params_t rp{2000.0, 200000.0, 100.0, 1000.0, 0.75, 3.14};
   neb::nebulas_rank nr(tdb_ptr, adb_ptr, rp, start_block, end_block);
 
   // account inter transactions
-  std::vector<neb::transaction_info_t> account_inter_txs;
-  for (auto it = txs.begin(); it != txs.end(); it++) {
-    std::string type_from = it->template get<::neb::type_from>();
-    std::string type_to = it->template get<::neb::type_to>();
-    if (type_from.compare("normal") == 0 && type_to.compare("normal") == 0) {
-      account_inter_txs.push_back(*it);
-    }
-  }
+  std::vector<neb::transaction_info_t> account_inter_txs =
+      tdb_ptr->read_inter_transaction_from_db_with_duration(start_block,
+                                                            end_block);
   LOG(INFO) << "account to account: " << account_inter_txs.size();
 
   // graph
@@ -66,6 +60,9 @@ void nebulas_rank_detail(const tdb_ptr_t tdb_ptr, const adb_ptr_t adb_ptr,
   nr.filter_empty_transactions_this_interval(txs_v);
   std::vector<neb::transaction_graph_ptr> tgs =
       nr.build_transaction_graphs(txs_v);
+  if (tgs.empty()) {
+    return;
+  }
   LOG(INFO) << "we have " << tgs.size() << " subgraphs.";
   for (auto it = tgs.begin(); it != tgs.end(); it++) {
     neb::transaction_graph_ptr ptr = *it;
@@ -79,7 +76,8 @@ void nebulas_rank_detail(const tdb_ptr_t tdb_ptr, const adb_ptr_t adb_ptr,
   LOG(INFO) << "done with merge graphs.";
 
   // median
-  std::unordered_set<std::string> accounts = nr.get_normal_accounts(txs);
+  std::unordered_set<std::string> accounts =
+      nr.get_normal_accounts(account_inter_txs);
   std::unordered_map<std::string, double> account_median =
       nr.get_account_balance_median(accounts, txs_v, adb_ptr);
 
@@ -98,10 +96,12 @@ void nebulas_rank_detail(const tdb_ptr_t tdb_ptr, const adb_ptr_t adb_ptr,
       nr.get_account_weight(in_out_vals, adb_ptr);
   std::unordered_map<std::string, double> account_rank =
       nr.get_account_rank(account_median, account_weight, rp);
+  LOG(INFO) << "account rank size: " << account_rank.size();
 
   // std::cout
   //<< "addr,median,rank,in_degree,out_degree,degrees,in_val,out_val,vals"
   //<< std::endl;
+  std::vector<neb::nr_info_t> infos;
   for (auto it = accounts.begin(); it != accounts.end(); it++) {
     std::string addr = *it;
     if (account_median.find(addr) == account_median.end() ||
@@ -134,20 +134,23 @@ void nebulas_rank_detail(const tdb_ptr_t tdb_ptr, const adb_ptr_t adb_ptr,
         account_rank[addr], in_out_degrees[addr].in_degree,
         in_out_degrees[addr].out_degree, degrees[addr], nas_in_val.value(),
         nas_out_val.value(), nas_stake.value());
-    ndb_ptr->insert_document_to_collection(info);
+    infos.push_back(info);
   }
+  LOG(INFO) << "insert to db begin...";
+  ndb_ptr->insert_date_nrs(infos);
+  LOG(INFO) << "insert to db done";
 }
 
 void write_to_nebulas_rank_db(const tdb_ptr_t tdb_ptr, const adb_ptr_t adb_ptr,
-                              const ndb_ptr_t ndb_ptr) {
+                              const ndb_ptr_t ndb_ptr, time_t end_ts) {
 
   time_t seconds_of_day = 24 * 60 * 60;
-  time_t seconds_of_minute = 60;
+  time_t seconds_of_ten_minute = 10 * 60;
 
-  time_t end_ts = neb::get_universal_timestamp();
   std::vector<neb::transaction_info_t> txs_in_end_last_minute =
       tdb_ptr->read_success_and_failed_transaction_from_db_with_ts_duration(
-          std::to_string(end_ts - seconds_of_minute), std::to_string(end_ts));
+          std::to_string(end_ts - seconds_of_ten_minute),
+          std::to_string(end_ts));
   if (txs_in_end_last_minute.empty()) {
     LOG(INFO) << "no transactions in end timestamp of last minute";
     return;
@@ -158,7 +161,7 @@ void write_to_nebulas_rank_db(const tdb_ptr_t tdb_ptr, const adb_ptr_t adb_ptr,
   time_t start_ts = end_ts - seconds_of_day;
   std::vector<neb::transaction_info_t> txs_in_start_last_minute =
       tdb_ptr->read_success_and_failed_transaction_from_db_with_ts_duration(
-          std::to_string(start_ts - seconds_of_minute),
+          std::to_string(start_ts - seconds_of_ten_minute),
           std::to_string(start_ts));
   if (txs_in_start_last_minute.empty()) {
     LOG(INFO) << "no transactions in start timestamp of last minute";
@@ -168,6 +171,7 @@ void write_to_nebulas_rank_db(const tdb_ptr_t tdb_ptr, const adb_ptr_t adb_ptr,
       txs_in_start_last_minute.back().template get<::neb::height>();
 
   std::string date = neb::time_t_to_date(start_ts);
+  LOG(INFO) << date;
   nebulas_rank_detail(tdb_ptr, adb_ptr, ndb_ptr, date, start_block, end_block);
   return;
 }
@@ -183,7 +187,7 @@ db_ptr_set_t get_db_ptr_set(const std::string &chain) {
   std::string db_usrname = std::getenv("DB_USER_NAME");
   std::string db_passwd = std::getenv("DB_PASSWORD");
 
-  if (chain.compare("nebulas") != 0 || chain.compare("eth") != 0) {
+  if (chain.compare("nebulas") != 0 && chain.compare("eth") != 0) {
     LOG(INFO) << "invalid chain, type 'nebulas' or 'eth'";
     exit(-1);
   }
@@ -220,21 +224,28 @@ int main(int argc, char *argv[]) {
   std::string chain = FLAGS_chain;
   int64_t start_block = FLAGS_start_block;
   int64_t end_block = FLAGS_end_block;
+  int32_t start_ts = FLAGS_start_ts;
+  int32_t end_ts = FLAGS_end_ts;
 
   db_ptr_set_t db_ptr_set = get_db_ptr_set(chain);
   tdb_ptr_t tdb_ptr = db_ptr_set.tdb_ptr;
   adb_ptr_t adb_ptr = db_ptr_set.adb_ptr;
   ndb_ptr_t ndb_ptr = db_ptr_set.ndb_ptr;
 
-  LOG(INFO) << start_block << ',' << end_block;
-  nebulas_service(tdb_ptr, adb_ptr, start_block, end_block);
+  time_t seconds_of_day = 24 * 60 * 60;
+
+  // LOG(INFO) << start_block << ',' << end_block;
+  // nebulas_service(tdb_ptr, adb_ptr, start_block, end_block);
+
+  for (time_t ts = start_ts; ts < end_ts; ts += seconds_of_day) {
+    write_to_nebulas_rank_db(tdb_ptr, adb_ptr, ndb_ptr, ts);
+  }
   return 0;
 
-  time_t seconds_of_day = 24 * 60 * 60;
   while (true) {
     time_t time_now = neb::get_universal_timestamp();
     if (time_now % seconds_of_day < 60) {
-      write_to_nebulas_rank_db(tdb_ptr, adb_ptr, ndb_ptr);
+      write_to_nebulas_rank_db(tdb_ptr, adb_ptr, ndb_ptr, time_now);
       LOG(INFO) << "waiting...";
     }
     boost::asio::io_service io;

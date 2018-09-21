@@ -76,6 +76,5 @@ private:
   rank_params_t m_rp;
   block_height_t m_start_block;
   block_height_t m_end_block;
-  std::vector<transaction_info_t> m_txs;
 }; // class nebulas_rank
 } // namespace neb

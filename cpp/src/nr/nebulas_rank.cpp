@@ -9,8 +9,6 @@ nebulas_rank::nebulas_rank(const transaction_db_ptr_t tdb_ptr,
                            block_height_t end_block)
     : m_tdb_ptr(tdb_ptr), m_adb_ptr(adb_ptr), m_rp(rp),
       m_start_block(start_block), m_end_block(end_block) {
-  m_txs = tdb_ptr->read_transaction_simplified_from_db_with_duration(
-      start_block, end_block);
 }
 
 std::vector<std::vector<transaction_info_t>>
@@ -103,16 +101,10 @@ nebulas_rank::get_normal_accounts(const std::vector<transaction_info_t> &txs) {
 
   for (auto it = txs.begin(); it != txs.end(); it++) {
     std::string from = it->template get<::neb::from>();
-    std::string type_from = it->template get<::neb::type_from>();
-    if (type_from.compare("normal") == 0) {
-      ret.insert(from);
-    }
+    ret.insert(from);
 
     std::string to = it->template get<::neb::to>();
-    std::string type_to = it->template get<::neb::type_to>();
-    if (type_to.compare("normal") == 0) {
-      ret.insert(to);
-    }
+    ret.insert(to);
   }
   return ret;
 }
@@ -212,16 +204,10 @@ std::unordered_map<std::string, double>
 nebulas_rank::get_account_score_service() {
 
   LOG(INFO) << "in func get_account_score_service";
-  LOG(INFO) << "before m_txs size: " << m_txs.size();
 
-  std::vector<transaction_info_t> ret;
-  for (auto it = m_txs.begin(); it != m_txs.end(); it++) {
-    std::string type_from = it->template get<::neb::type_from>();
-    std::string type_to = it->template get<::neb::type_to>();
-    if (type_from.compare("normal") == 0 && type_to.compare("normal") == 0) {
-      ret.push_back(*it);
-    }
-  }
+  std::vector<transaction_info_t> ret =
+      m_tdb_ptr->read_inter_transaction_from_db_with_duration(m_start_block,
+                                                              m_end_block);
   LOG(INFO) << "account to account: " << ret.size();
 
   std::vector<std::vector<transaction_info_t>> txs =
@@ -247,7 +233,7 @@ nebulas_rank::get_account_score_service() {
   merge_topk_edges_with_same_from_and_same_to(tg->internal_graph());
   LOG(INFO) << "done with merge graphs.";
 
-  std::unordered_set<std::string> accounts = get_normal_accounts(m_txs);
+  std::unordered_set<std::string> accounts = get_normal_accounts(ret);
   std::unordered_map<std::string, double> median =
       get_account_balance_median(accounts, txs, m_adb_ptr);
   // for (auto it = median.begin(); it != median.end(); it++) {
