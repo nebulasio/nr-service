@@ -59,8 +59,8 @@ std::string eth_get_code(const std::string &address) {
   std::string cmd = boost::str(
       boost::format(
           "curl -s --data "
-          "'{\"method\":\"eth_getCode\",\"params\":[\"%1%\",\"latest\"],\"id\":"
-          "1,\"jsonrpc\":\"2.0\"}' -H \"Content-Type: application/json\" -X "
+          "'{\"method\":\"eth_getCode\",\"params\":[\"%1%\"],\"id\":1,"
+          "\"jsonrpc\":\"2.0\"}' -H \"Content-Type: application/json\" -X "
           "POST localhost:8545") %
       address);
   std::string ret = get_stdout_from_command(cmd);

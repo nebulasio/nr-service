@@ -12,8 +12,10 @@ public:
 
   void insert_transactions_to_db(block_height_t start_block,
                                  block_height_t end_block);
-
   void clean_transaction_db();
+
+  block_height_t get_max_height_from_db();
+  void remove_transactions_this_block_height(block_height_t height);
 
 private:
   void set_transactions(const std::vector<transaction_info_t> &txs,

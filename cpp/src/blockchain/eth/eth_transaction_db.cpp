@@ -11,6 +11,27 @@ eth_transaction_db::eth_transaction_db(const std::string &url,
                                        const std::string &dbname)
     : transaction_db<eth_db>(url, usrname, passwd, dbname) {}
 
+block_height_t eth_transaction_db::get_max_height_from_db() {
+
+  std::unique_ptr<::arangodb::fuerte::Response> resp_ptr = aql_query(
+      "for tx in transaction sort tx.height desc limit 1 return tx.height");
+
+  auto height_doc = resp_ptr->slices().front().get("result");
+  if (height_doc.isNone() || height_doc.isEmptyArray()) {
+    return 1;
+  }
+  return height_doc.at(0).getInt();
+}
+
+void eth_transaction_db::remove_transactions_this_block_height(
+    block_height_t block_height) {
+  const std::string aql =
+      boost::str(boost::format("for tx in transaction filter tx.height==%1% "
+                               "remove tx in transaction") %
+                 block_height);
+  aql_query(aql);
+}
+
 void eth_transaction_db::insert_transaction(VPackBuilder &builder_arr,
                                             const transaction_info_t &info) {
   auto it = &info;
@@ -47,9 +68,31 @@ void eth_transaction_db::insert_block_transactions(
   VPackBuilder builder_arr;
   builder_arr.openArray();
 
-  for (auto tx : txs) {
-    insert_transaction(builder_arr, tx);
+  uint32_t payload_size = 1 << 9;
+
+  for (size_t i = 0; i < txs.size(); i++) {
+
+    if (i > 0 && i % payload_size == 0) {
+      auto request = ::arangodb::fuerte::createRequest(
+          ::arangodb::fuerte::RestVerb::Post,
+          "/_db/" + m_dbname + "/_api/document/transaction");
+
+      // send request with array length payload_size
+      builder_arr.close();
+      request->addVPack(builder_arr.slice());
+      m_connection_ptr->sendRequest(std::move(request));
+      // LOG(INFO) << (i / payload_size) << ',' << (txs.size() / payload_size);
+
+      builder_arr.clear();
+      builder_arr.openArray();
+    }
+
+    insert_transaction(builder_arr, txs[i]);
   }
+
+  // for (auto tx : txs) {
+  // insert_transaction(builder_arr, tx);
+  //}
 
   builder_arr.close();
   request->addVPack(builder_arr.slice());
@@ -63,7 +106,10 @@ void eth_transaction_db::insert_transactions_to_db(block_height_t start_block,
     // LOG(INFO) << h;
 
     auto txs = get_block_transactions_by_height(h);
+    // LOG(INFO) << "get block transactions by height done, size: " <<
+    // txs.size();
     auto internal_txs = trace_block(h);
+    // LOG(INFO) << "trace block done, size: " << internal_txs.size();
 
     set_transactions(txs, internal_txs);
     insert_block_transactions(internal_txs);
