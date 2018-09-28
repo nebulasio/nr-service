@@ -216,9 +216,9 @@ void nebulas_transaction_db::append_transaction_graph_vertex_and_edge_by_block(
 void nebulas_transaction_db::append_transaction_to_graph() {
 
   block_height_t last_height = get_max_height_from_db();
+  int64_t tx_id = get_max_tx_id_from_db(last_height);
   remove_transactions_this_block_height(last_height);
   block_height_t current_height = ::neb::nebulas::get_block_height();
-  int64_t tx_id = get_max_tx_id_from_db(last_height - 1);
 
   for (int h = last_height; h < current_height; h++) {
 
