@@ -237,13 +237,14 @@ int main(int argc, char *argv[]) {
   // LOG(INFO) << start_block << ',' << end_block;
   // nebulas_service(tdb_ptr, adb_ptr, start_block, end_block);
 
-  for (time_t ts = start_ts; ts < end_ts; ts += seconds_of_day) {
-    write_to_nebulas_rank_db(tdb_ptr, adb_ptr, ndb_ptr, ts);
-  }
-  return 0;
+  // for (time_t ts = start_ts; ts < end_ts; ts += seconds_of_day) {
+  // write_to_nebulas_rank_db(tdb_ptr, adb_ptr, ndb_ptr, ts);
+  //}
+  // return 0;
 
   while (true) {
     time_t time_now = neb::get_universal_timestamp();
+    LOG(INFO) << time_now % seconds_of_day;
     if (time_now % seconds_of_day < 60) {
       write_to_nebulas_rank_db(tdb_ptr, adb_ptr, ndb_ptr, time_now);
       LOG(INFO) << "waiting...";

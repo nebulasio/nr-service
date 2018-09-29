@@ -16,6 +16,12 @@ int main(int argc, char *argv[]) {
   std::shared_ptr<::arangodb::fuerte::Connection> conn_ptr =
       ptr->db_connection_ptr();
 
-  ptr->append_transaction_to_graph();
+  while (true) {
+    ptr->append_transaction_to_graph();
+    LOG(INFO) << "waiting...";
+    boost::asio::io_service io;
+    boost::asio::deadline_timer t(io, boost::posix_time::seconds(60));
+    t.wait();
+  }
   return 0;
 }
