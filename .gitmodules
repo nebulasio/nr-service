@@ -13,3 +13,10 @@
 [submodule "cpp/3rd_party/velocypack"]
 	path = cpp/3rd_party/velocypack
 	url = https://github.com/xchmwang/velocypack.git
+[submodule "cpp/3rd_party/fuerte"]
+	path = cpp/3rd_party/fuerte
+	url = https://github.com/xchmwang/fuerte.git
+	branch = makeFuerteGreatAgain
+[submodule "cpp/3rd_party/cpp-sql"]
+	path = cpp/3rd_party/cpp-sql
+	url = https://github.com/xchmwang/cpp-sql.git
