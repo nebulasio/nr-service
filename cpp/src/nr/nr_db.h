@@ -1,7 +1,6 @@
 #pragma once
 
 #include "blockchain/account_db.h"
-#include "sql/mysql.hpp"
 #include "sql/table.h"
 
 namespace neb {
