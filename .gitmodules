@@ -13,6 +13,3 @@
 [submodule "cpp/3rd_party/velocypack"]
 	path = cpp/3rd_party/velocypack
 	url = https://github.com/xchmwang/velocypack.git
-[submodule "cpp/3rd_party/fuerte"]
-	path = cpp/3rd_party/fuerte
-	url = https://github.com/xchmwang/fuerte.git
