@@ -63,21 +63,19 @@ add_definitions(-DNEBULAS_DB=$ENV{NEBULAS_DB})
 
 include_directories(${PROJECT_SOURCE_DIR}/src/)
 include_directories(${PROJECT_SOURCE_DIR}/3rd_party/cpp-sql/)
-include_directories(/usr/include/cppconn)
 include_directories(/usr/local/include)
-include_directories($ENV{BOOST_DIR}/include)
-include_directories($ENV{BOOST_DIR})
+include_directories(/usr/include)
 include_directories(${PROJECT_SOURCE_DIR}/lib/include)
 
-link_directories($ENV{BOOST_DIR}/lib)
 link_directories(${PROJECT_BINARY_DIR})
 link_directories(/usr/local/lib)
+link_directories(/usr/lib)
 link_directories(${PROJECT_BINARY_DIR}/lib/lib)
 
 add_subdirectory(src)
 enable_testing()
 
-set(common_libs tga_engine fuerte velocypack boost_system boost_thread pthread curl ssl crypto mysqlcppconn boost_date_time glog http_parser)
+set(common_libs tga_engine fuerte velocypack boost_system boost_thread pthread curl ssl crypto boost_date_time glog http_parser)
 add_subdirectory(apiserver)
 add_subdirectory(test)
 
