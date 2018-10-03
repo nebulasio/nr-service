@@ -109,3 +109,7 @@ if [ ! -d $CUR_DIR/lib/include/fuerte ]; then
   build_with_cmake fuerte
 fi
 
+if [ ! -d $CUR_DIR/lib/include/curl ]; then
+  build_with_cmake curl
+fi
+

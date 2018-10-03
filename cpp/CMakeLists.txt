@@ -19,18 +19,18 @@ endif(Release)
 
 # Download and unpack googletest at configure time
 configure_file(CMakeLists.txt.in googletest-download/CMakeLists.txt)
-#execute_process(COMMAND ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" .
-  #RESULT_VARIABLE result
-  #WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/googletest-download )
-#if(result)
-  #message(FATAL_ERROR "CMake step for googletest failed: ${result}")
-#endif()
-#execute_process(COMMAND ${CMAKE_COMMAND} --build .
-  #RESULT_VARIABLE result
-  #WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/googletest-download )
-#if(result)
-  #message(FATAL_ERROR "Build step for googletest failed: ${result}")
-#endif()
+execute_process(COMMAND ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" .
+  RESULT_VARIABLE result
+  WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/googletest-download )
+if(result)
+  message(FATAL_ERROR "CMake step for googletest failed: ${result}")
+endif()
+execute_process(COMMAND ${CMAKE_COMMAND} --build .
+  RESULT_VARIABLE result
+  WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/googletest-download )
+if(result)
+  message(FATAL_ERROR "Build step for googletest failed: ${result}")
+endif()
 
 # Prevent overriding the parent project's compiler/linker
 # settings on Windows
@@ -41,9 +41,9 @@ find_package( PythonLibs 2.7 REQUIRED )
 add_subdirectory(pybind11)
 # Add googletest directly to our build. This defines
 # the gtest and gtest_main targets.
-#add_subdirectory(${CMAKE_BINARY_DIR}/googletest-src
-                 #${CMAKE_BINARY_DIR}/googletest-build
-                 #EXCLUDE_FROM_ALL)
+add_subdirectory(${CMAKE_BINARY_DIR}/googletest-src
+                 ${CMAKE_BINARY_DIR}/googletest-build
+                 EXCLUDE_FROM_ALL)
 
 # The gtest/gtest_main targets carry header search path
 # dependencies automatically when using CMake 2.8.11 or
@@ -61,16 +61,16 @@ add_definitions(-DDB_PASSWORD=$ENV{DB_PASSWORD})
 add_definitions(-DNEBULAS_DB=$ENV{NEBULAS_DB})
 
 
+include_directories(${PROJECT_SOURCE_DIR}/lib/include)
 include_directories(${PROJECT_SOURCE_DIR}/src/)
 include_directories(${PROJECT_SOURCE_DIR}/3rd_party/cpp-sql/)
 include_directories(/usr/local/include)
 include_directories(/usr/include)
-include_directories(${PROJECT_SOURCE_DIR}/lib/include)
 
+link_directories(${PROJECT_BINARY_DIR}/lib/lib)
 link_directories(${PROJECT_BINARY_DIR})
 link_directories(/usr/local/lib)
 link_directories(/usr/lib)
-link_directories(${PROJECT_BINARY_DIR}/lib/lib)
 
 add_subdirectory(src)
 enable_testing()
