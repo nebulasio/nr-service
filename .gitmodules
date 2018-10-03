@@ -24,3 +24,6 @@
 	path = cpp/3rd_party/arangodb
 	url = https://github.com/xchmwang/arangodb.git
 	branch = v3.3.15
+[submodule "cpp/3rd_party/curl"]
+	path = cpp/3rd_party/curl
+	url = https://github.com/curl/curl.git
