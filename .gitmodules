@@ -20,3 +20,7 @@
 [submodule "cpp/3rd_party/cpp-sql"]
 	path = cpp/3rd_party/cpp-sql
 	url = https://github.com/xchmwang/cpp-sql.git
+[submodule "cpp/3rd_party/arangodb"]
+	path = cpp/3rd_party/arangodb
+	url = https://github.com/xchmwang/arangodb.git
+	branch = v3.3.15
