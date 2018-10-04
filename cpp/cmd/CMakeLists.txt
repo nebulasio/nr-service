@@ -32,3 +32,6 @@ target_link_libraries(eth_transaction_writer ${common_libs} gflags)
 add_executable(eth_account_writer eth_account_writer.cpp)
 target_link_libraries(eth_account_writer ${common_libs} gflags)
 
+add_executable(statistics statistics.cpp)
+target_link_libraries(statistics ${common_libs} gflags)
+

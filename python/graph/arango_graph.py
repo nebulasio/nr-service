@@ -60,9 +60,6 @@ def create_db(db):
 
     assert isinstance(db, arango.database.StandardDatabase)
 
-    if not db.has_database(dbname):
-        db.create_database(dbname)
-
     # collection account
     if not db.has_collection('account'):
         db.create_collection('account')

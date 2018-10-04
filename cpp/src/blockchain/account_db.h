@@ -2,7 +2,6 @@
 
 #include "blockchain/nebulas/nebulas_currency.h"
 #include "blockchain/transaction_db.h"
-#include "sql/mysql.hpp"
 #include "sql/table.h"
 
 namespace neb {
@@ -23,6 +22,9 @@ public:
   read_account_from_db_sort_by_balance_desc() = 0;
   virtual std::vector<account_info_t>
   read_account_by_address(const std::string &address) = 0;
+  virtual std::vector<account_info_t>
+  read_account_from_db_with_create_ts_duration(const std::string &start_ts,
+                                               const std::string &end_ts) = 0;
 
   virtual account_balance_t get_account_balance(block_height_t height,
                                                 const std::string &address) = 0;
@@ -87,6 +89,20 @@ public:
       return b1 > b2;
     };
     sort(rs.begin(), rs.end(), cmp);
+    return rs;
+  }
+
+  virtual std::vector<account_info_t>
+  read_account_from_db_with_create_ts_duration(const std::string &start_ts,
+                                               const std::string &end_ts) {
+    const std::string aql = boost::str(
+        boost::format("for record in account filter record.create_at>='%1%' "
+                      "and record.create_at<='%2%' return record") %
+        start_ts % end_ts);
+    auto resp_ptr = this->aql_query(aql);
+
+    std::vector<account_info_t> rs;
+    base_db_t::parse_from_response(std::move(resp_ptr), rs);
     return rs;
   }
 
