@@ -9,7 +9,6 @@ sys.path.append('../')
 import os
 from util.util import LOG
 
-import MySQLdb
 import arango
 from arango import ArangoClient
 
@@ -17,7 +16,6 @@ dbuser = os.environ['DB_USER_NAME']
 dbpass = os.environ['DB_PASSWORD']
 dbname = os.environ['NEBULAS_DB']
 client = ArangoClient(protocol='http', host='localhost', port=8529)
-database = client.db(username=dbuser, password=dbpass, name=dbname)
 
 collection_list = ['height', 'address', 'transaction']
 edge_list = ['height_next', 'height_txs', 'from_txs', 'txs_to']
@@ -63,6 +61,9 @@ def create_db(db):
     if not db.has_database(dbname):
         db.create_database(dbname)
 
+    database = client.db(username=dbuser, password=dbpass, name=dbname)
+
+    db = database
     # collection account
     if not db.has_collection('account'):
         db.create_collection('account')
@@ -97,6 +98,7 @@ def create_db(db):
     create_edge_definition(graph, 'height_txs', 'height', 'transaction')
     create_edge_definition(graph, 'from_txs', 'address', 'transaction')
     create_edge_definition(graph, 'txs_to', 'transaction', 'address')
+    return db
 
 
 def drop_db(db):
@@ -132,31 +134,6 @@ def clear_db(db):
             name = collection['name']
             db.collection(name).truncate()
     return
-
-
-def get_transactions_from_mysql(start_block, end_block):
-    '''
-    usage - get transactions from mysql with start and end interval
-    @start_block - block height start
-    @end_block - block height end
-    @return - transactions tuple
-    '''
-
-    assert isinstance(start_block, int)
-    assert isinstance(end_block, int)
-
-    db = MySQLdb.connect('localhost', dbuser, dbpass, dbname, charset='utf8')
-    cursor = db.cursor()
-    sql = 'select * from nebulas_transaction_db where height>=%s and height<=%s' % (
-        start_block, end_block)
-
-    try:
-        cursor.execute(sql)
-        results = cursor.fetchall()
-        return results
-    except Exception, e:
-        print e
-    return tuple()
 
 
 def build_arango_graph(db, txs):
@@ -325,9 +302,12 @@ def main():
     '''
     usage - func main
     '''
-    clear_db(database)
+
+    database = client.db(username=dbuser, password=dbpass, name='_system')
+
+    db = create_db(database)
+    # clear_db(database)
     # drop_db(database)
-    # create_db(database)
 
 
 if __name__ == '__main__':
