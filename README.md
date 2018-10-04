@@ -6,7 +6,7 @@ Nebulas rank offline service
 
 Compile and install nebulas, tutorial [here](https://github.com/nebulasio/wiki/blob/master/tutorials/%5BEnglish%5D%20Nebulas%20101%20-%2001%20Installation.md).
 
-## Install dependencies (>=Ubunut16.04)
+## Install dependencies (>=Ubuntu16.04)
 
 ### Development environment dependency
 
