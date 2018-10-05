@@ -26,7 +26,8 @@ Compile and install nebulas, tutorial [here](https://github.com/nebulasio/wiki/b
 ### Install with script
 
 ```sh
-$ git clone git@github.com:nebulasio/nr-service.git
+$ git clone https://github.com/nebulasio/nr-service.git
+$ git submodule update --init
 $ cd nr-service/cpp
 $ ./prepare.sh
 ```
