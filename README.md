@@ -62,7 +62,7 @@ $ source env.set.sh
 ## Build
 
 ```sh
-$ cd /path/to/nr-service
+$ cd /path/to/nr-service/cpp
 $ mkdir build && cd build
 $ cmake .. && make
 ```
