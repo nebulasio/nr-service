@@ -38,7 +38,7 @@ nebulas_account_db::sort_update_info_by_height(
 void nebulas_account_db::set_coinbase_account() {
   // coinbase address
   std::string address = "n1dZZnqKGEkb1LHYsZRei1CH6DunTio1j1q";
-  block_height_t height = get_max_height_from_db();
+  block_height_t height = get_max_height_from_account();
   std::pair<std::string, account_type_t> account_state =
       ::neb::nebulas::get_account_state(height, address);
   if (account_state.second == -1) {
@@ -57,10 +57,22 @@ void nebulas_account_db::set_coinbase_account() {
   insert_document_to_collection(info);
 }
 
-block_height_t nebulas_account_db::get_max_height_from_db() {
+block_height_t nebulas_account_db::get_max_height_from_account() {
 
   std::unique_ptr<::arangodb::fuerte::Response> resp_ptr =
       aql_query("for h in account sort h.height desc limit 1 return h.height");
+
+  auto height_doc = resp_ptr->slices().front().get("result");
+  if (height_doc.isNone() || height_doc.isEmptyArray()) {
+    return 0;
+  }
+  return height_doc.at(0).getInt();
+}
+
+block_height_t nebulas_account_db::get_max_height_from_transaction() {
+
+  std::unique_ptr<::arangodb::fuerte::Response> resp_ptr = aql_query(
+      "for tx in transaction sort tx.height desc limit 1 return tx.height");
 
   auto height_doc = resp_ptr->slices().front().get("result");
   if (height_doc.isNone() || height_doc.isEmptyArray()) {
@@ -88,12 +100,13 @@ void nebulas_account_db::insert_document_to_collection(
 }
 
 void nebulas_account_db::append_account_to_db() {
-  block_height_t last_height = get_max_height_from_db();
+  block_height_t ac_height = get_max_height_from_account();
+  block_height_t tx_height = get_max_height_from_transaction();
 
   std::vector<transaction_info_t> txs =
       m_tdb_ptr
           ->read_success_and_failed_transaction_from_db_with_block_duration(
-              last_height, std::numeric_limits<int64_t>::max());
+              ac_height, tx_height);
 
   std::vector<account_info_t> account_info_list = read_account_from_db();
   std::unordered_map<account_address_t, account_info_t>

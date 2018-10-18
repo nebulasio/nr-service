@@ -1,7 +1,6 @@
 #pragma once
 
 #include "blockchain/account_db.h"
-#include "sql/mysql.hpp"
 #include "sql/table.h"
 
 namespace neb {
@@ -94,9 +93,32 @@ public:
     VPackBuilder builder_arr;
     builder_arr.openArray();
 
-    for (auto info : infos) {
-      insert_nr(builder_arr, info);
+    uint32_t payload_size = 1 << 9;
+
+    for (size_t i = 0; i < infos.size(); i++) {
+
+      if (i > 0 && i % payload_size == 0) {
+        auto request = ::arangodb::fuerte::createRequest(
+            ::arangodb::fuerte::RestVerb::Post,
+            "/_db/" + this->m_dbname + "/_api/document/nr");
+
+        // send request with array length payload_size
+        builder_arr.close();
+        request->addVPack(builder_arr.slice());
+        this->m_connection_ptr->sendRequest(std::move(request));
+        // LOG(INFO) << (i / payload_size) << ',' << (infos.size() /
+        // payload_size);
+
+        builder_arr.clear();
+        builder_arr.openArray();
+      }
+
+      insert_nr(builder_arr, infos[i]);
     }
+
+    // for (auto info : infos) {
+    // insert_nr(builder_arr, info);
+    //}
 
     builder_arr.close();
     request->addVPack(builder_arr.slice());

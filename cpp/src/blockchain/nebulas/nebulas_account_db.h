@@ -14,7 +14,8 @@ public:
   void append_account_to_db();
 
 protected:
-  block_height_t get_max_height_from_db();
+  block_height_t get_max_height_from_account();
+  block_height_t get_max_height_from_transaction();
 
   void set_coinbase_account();
 

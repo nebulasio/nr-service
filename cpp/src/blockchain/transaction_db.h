@@ -111,34 +111,52 @@ public:
   virtual std::vector<transaction_info_t>
   read_inter_transaction_from_db_with_duration(block_height_t start_block,
                                                block_height_t end_block) {
-    const std::string aql = boost::str(
-        boost::format(
-            "for tx in transaction filter tx.status!=0 and "
-            "tx.type_from=='normal' and tx.type_to=='normal' and "
-            "tx.height>=%1% and tx.height<=%2% return {tx_id:tx._key, "
-            "status:tx.status, from:tx.from, to:tx.to, tx_value:tx.tx_value, "
-            "height:tx.height, timestamp:tx.timestamp, type_from:tx.type_from, "
-            "type_to:tx.type_to, gas_used:tx.gas_used, gas_price:tx.gas_price, "
-            "contract_address:tx.contract_address, tx_type:tx.tx_type}") %
-        start_block % end_block);
-    auto resp_ptr = this->aql_query(aql);
-    return from_response(std::move(resp_ptr));
+    std::vector<transaction_info_t> ret;
+
+    block_height_t block_interval = 1 << 6;
+    for (auto s = start_block; s < end_block; s += block_interval) {
+      auto e = s + block_interval;
+      if (e > end_block) {
+        auto v =
+            read_inter_transaction_from_db_with_duration_and_with_block_interval(
+                s, end_block);
+        ret.insert(ret.end(), v.begin(), v.end());
+        break;
+      }
+
+      auto v =
+          read_inter_transaction_from_db_with_duration_and_with_block_interval(
+              s, e);
+      ret.insert(ret.end(), v.begin(), v.end());
+    }
+
+    return ret;
   }
 
   virtual std::vector<transaction_info_t>
   read_success_and_failed_transaction_from_db_with_block_duration(
       block_height_t start_block, block_height_t end_block) {
-    const std::string aql = boost::str(
-        boost::format(
-            "for tx in transaction filter tx.height>=%1% and tx.height<=%2% "
-            "return {tx_id:tx._key, status:tx.status, from:tx.from, to:tx.to, "
-            "tx_value:tx.tx_value, height:tx.height, timestamp:tx.timestamp, "
-            "type_from:tx.type_from, type_to:tx.type_to, gas_used:tx.gas_used, "
-            "gas_price:tx.gas_price, contract_address:tx.contract_address, "
-            "tx_type:tx.tx_type}") %
-        start_block % end_block);
-    auto resp_ptr = this->aql_query(aql);
-    return from_response(std::move(resp_ptr));
+
+    std::vector<transaction_info_t> ret;
+
+    block_height_t block_interval = 1 << 6;
+    for (auto s = start_block; s < end_block; s += block_interval) {
+      auto e = s + block_interval;
+      if (e > end_block) {
+        auto v =
+            read_success_and_failed_transaction_from_db_with_block_duration_and_with_block_interval(
+                s, end_block);
+        ret.insert(ret.end(), v.begin(), v.end());
+        break;
+      }
+
+      auto v =
+          read_success_and_failed_transaction_from_db_with_block_duration_and_with_block_interval(
+              s, e);
+      ret.insert(ret.end(), v.begin(), v.end());
+    }
+
+    return ret;
   }
 
   virtual std::vector<transaction_info_t>
@@ -267,6 +285,40 @@ private:
     std::vector<transaction_info_t> rs;
     base_db_t::parse_from_response(std::move(resp_ptr), rs);
     return rs;
+  }
+
+  std::vector<transaction_info_t>
+  read_inter_transaction_from_db_with_duration_and_with_block_interval(
+      block_height_t start_block, block_height_t end_block) {
+
+    const std::string aql = boost::str(
+        boost::format(
+            "for tx in transaction filter tx.status!=0 and "
+            "tx.type_from=='normal' and tx.type_to=='normal' and "
+            "tx.height>=%1% and tx.height<%2% return {tx_id:tx._key, "
+            "status:tx.status, from:tx.from, to:tx.to, tx_value:tx.tx_value, "
+            "height:tx.height, timestamp:tx.timestamp, type_from:tx.type_from, "
+            "type_to:tx.type_to, gas_used:tx.gas_used, gas_price:tx.gas_price, "
+            "contract_address:tx.contract_address, tx_type:tx.tx_type}") %
+        start_block % end_block);
+    auto resp_ptr = this->aql_query(aql);
+    return from_response(std::move(resp_ptr));
+  }
+
+  std::vector<transaction_info_t>
+  read_success_and_failed_transaction_from_db_with_block_duration_and_with_block_interval(
+      block_height_t start_block, block_height_t end_block) {
+    const std::string aql = boost::str(
+        boost::format(
+            "for tx in transaction filter tx.height>=%1% and tx.height<%2% "
+            "return {tx_id:tx._key, status:tx.status, from:tx.from, to:tx.to, "
+            "tx_value:tx.tx_value, height:tx.height, timestamp:tx.timestamp, "
+            "type_from:tx.type_from, type_to:tx.type_to, gas_used:tx.gas_used, "
+            "gas_price:tx.gas_price, contract_address:tx.contract_address, "
+            "tx_type:tx.tx_type}") %
+        start_block % end_block);
+    auto resp_ptr = this->aql_query(aql);
+    return from_response(std::move(resp_ptr));
   }
 
 }; // end class transaction_db
