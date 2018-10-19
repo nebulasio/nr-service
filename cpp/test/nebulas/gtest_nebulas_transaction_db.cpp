@@ -9,14 +9,14 @@ TEST(test_nebulas_transaction_db, test_append_transaction_to_db_full) {
   transaction_ptr_t transaction_db_ptr =
       std::make_shared<transaction_db_t>(nt_db);
 
-  neb::block_height_t start_block = 400000;
-  neb::block_height_t end_block = 420000;
+  neb::block_height_t start_block = 1;
+  neb::block_height_t end_block = 400000;
 
   for (neb::block_height_t h = start_block; h <= end_block; h++) {
     auto res =
         transaction_db_ptr
             ->read_success_and_failed_transaction_from_db_with_block_duration(
-                h, h);
+                h, h + 1);
 
     std::vector<neb::transaction_info_t> v =
         ::neb::nebulas::get_block_transactions_by_height(h, std::string());
@@ -36,6 +36,9 @@ TEST(test_nebulas_transaction_db, test_append_transaction_to_db_full) {
 
     LOG(INFO) << h << ',' << res.size() << ',' << rs.size();
     EXPECT_TRUE(rs.size() == res.size());
+    if (rs.size() != res.size()) {
+      break;
+    }
   }
 }
 

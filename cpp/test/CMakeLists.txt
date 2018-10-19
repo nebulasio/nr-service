@@ -1,7 +1,4 @@
-add_executable(nebulas_test main.cpp
-  #gtest_nebulas_account_db.cpp
-  #gtest_nebulas_transaction_db.cpp
-  gtest_eth_transaction_db.cpp
-  )
-target_link_libraries(nebulas_test gtest ${common_libs})
+include_directories(${PROJECT_SOURCE_DIR}/test/)
 
+add_subdirectory(nebulas)
+add_subdirectory(eth)
