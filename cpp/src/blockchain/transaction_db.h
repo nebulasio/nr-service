@@ -118,15 +118,12 @@ public:
       auto e = s + block_interval;
       if (e > end_block) {
         auto v =
-            read_inter_transaction_from_db_with_duration_and_with_block_interval(
-                s, end_block);
+            read_inter_transaction_from_db_with_duration_sharding(s, end_block);
         ret.insert(ret.end(), v.begin(), v.end());
         break;
       }
 
-      auto v =
-          read_inter_transaction_from_db_with_duration_and_with_block_interval(
-              s, e);
+      auto v = read_inter_transaction_from_db_with_duration_sharding(s, e);
       ret.insert(ret.end(), v.begin(), v.end());
     }
 
@@ -144,35 +141,45 @@ public:
       auto e = s + block_interval;
       if (e > end_block) {
         auto v =
-            read_success_and_failed_transaction_from_db_with_block_duration_and_with_block_interval(
+            read_success_and_failed_transaction_from_db_with_block_duration_sharding(
                 s, end_block);
         ret.insert(ret.end(), v.begin(), v.end());
         break;
       }
 
       auto v =
-          read_success_and_failed_transaction_from_db_with_block_duration_and_with_block_interval(
+          read_success_and_failed_transaction_from_db_with_block_duration_sharding(
               s, e);
       ret.insert(ret.end(), v.begin(), v.end());
     }
-
     return ret;
   }
 
   virtual std::vector<transaction_info_t>
   read_success_and_failed_transaction_from_db_with_ts_duration(
       const std::string &start_ts, const std::string &end_ts) {
-    const std::string aql = boost::str(
-        boost::format(
-            "for tx in transaction filter tx.timestamp>='%1%' and "
-            "tx.timestamp<='%2%' return {tx_id:tx._key, status:tx.status, "
-            "from:tx.from, to:tx.to, tx_value:tx.tx_value, height:tx.height, "
-            "timestamp:tx.timestamp, type_from:tx.type_from, "
-            "type_to:tx.type_to, gas_used:tx.gas_used, gas_price:tx.gas_price, "
-            "contract_address:tx.contract_address, tx_type:tx.tx_type}") %
-        start_ts % end_ts);
-    auto resp_ptr = this->aql_query(aql);
-    return from_response(std::move(resp_ptr));
+
+    std::vector<transaction_info_t> ret;
+
+    block_height_t block_interval = 1 << 6;
+    std::string ts_interval = std::to_string(block_interval * 15);
+    for (auto s = start_ts; s < end_ts;
+         s = std::to_string(std::stoi(s) + std::stoi(ts_interval))) {
+      auto e = std::to_string(std::stoi(s) + std::stoi(ts_interval));
+      if (e.compare(end_ts) > 0) {
+        auto v =
+            read_success_and_failed_transaction_from_db_with_ts_duration_sharding(
+                s, end_ts);
+        ret.insert(ret.end(), v.begin(), v.end());
+        break;
+      }
+
+      auto v =
+          read_success_and_failed_transaction_from_db_with_ts_duration_sharding(
+              s, e);
+      ret.insert(ret.end(), v.begin(), v.end());
+    }
+    return ret;
   }
 
   virtual std::vector<transaction_info_t>
@@ -288,7 +295,7 @@ private:
   }
 
   std::vector<transaction_info_t>
-  read_inter_transaction_from_db_with_duration_and_with_block_interval(
+  read_inter_transaction_from_db_with_duration_sharding(
       block_height_t start_block, block_height_t end_block) {
 
     const std::string aql = boost::str(
@@ -306,7 +313,7 @@ private:
   }
 
   std::vector<transaction_info_t>
-  read_success_and_failed_transaction_from_db_with_block_duration_and_with_block_interval(
+  read_success_and_failed_transaction_from_db_with_block_duration_sharding(
       block_height_t start_block, block_height_t end_block) {
     const std::string aql = boost::str(
         boost::format(
@@ -317,6 +324,22 @@ private:
             "gas_price:tx.gas_price, contract_address:tx.contract_address, "
             "tx_type:tx.tx_type}") %
         start_block % end_block);
+    auto resp_ptr = this->aql_query(aql);
+    return from_response(std::move(resp_ptr));
+  }
+
+  std::vector<transaction_info_t>
+  read_success_and_failed_transaction_from_db_with_ts_duration_sharding(
+      const std::string &start_ts, const std::string &end_ts) {
+    const std::string aql = boost::str(
+        boost::format(
+            "for tx in transaction filter tx.timestamp>='%1%' and "
+            "tx.timestamp<'%2%' return {tx_id:tx._key, status:tx.status, "
+            "from:tx.from, to:tx.to, tx_value:tx.tx_value, height:tx.height, "
+            "timestamp:tx.timestamp, type_from:tx.type_from, "
+            "type_to:tx.type_to, gas_used:tx.gas_used, gas_price:tx.gas_price, "
+            "contract_address:tx.contract_address, tx_type:tx.tx_type}") %
+        start_ts % end_ts);
     auto resp_ptr = this->aql_query(aql);
     return from_response(std::move(resp_ptr));
   }
