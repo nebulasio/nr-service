@@ -18,5 +18,5 @@ std::vector<transaction_info_t>
 get_block_transactions_by_height(block_height_t height);
 
 std::vector<transaction_info_t> trace_block(block_height_t height);
-}
+} // namespace eth
 } // namespace neb

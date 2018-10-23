@@ -15,7 +15,7 @@ int main(int argc, char *argv[]) {
     ptr->append_account_to_db();
     LOG(INFO) << "waiting...";
     boost::asio::io_service io;
-    boost::asio::deadline_timer t(io, boost::posix_time::seconds(1800));
+    boost::asio::deadline_timer t(io, boost::posix_time::seconds(60));
     t.wait();
   }
   return 0;
