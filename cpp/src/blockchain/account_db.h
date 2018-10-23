@@ -1,8 +1,11 @@
 #pragma once
 
+#include "blockchain/eth/eth_api.h"
+#include "blockchain/nebulas/nebulas_api.h"
 #include "blockchain/nebulas/nebulas_currency.h"
 #include "blockchain/transaction_db.h"
 #include "sql/table.h"
+#include "utils/util.h"
 
 namespace neb {
 
@@ -29,11 +32,31 @@ public:
   virtual account_balance_t get_account_balance(block_height_t height,
                                                 const std::string &address) = 0;
   virtual double get_normalized_value(double value) = 0;
-  virtual void set_height_address_val(int64_t start_block,
-                                      int64_t end_block) = 0;
+  virtual void set_height_address_val(
+      int64_t start_block, int64_t end_block,
+      std::unordered_map<account_address_t, account_balance_t>
+          &addr_balance) = 0;
+  virtual std::string get_address_balance(const std::string &address,
+                                          const std::string &height) = 0;
 
   virtual std::string account_info_to_string(const account_info_t &info) = 0;
 };
+
+namespace internal {
+template <typename TS> struct account_db_traits {};
+template <> struct account_db_traits<nebulas_db> {
+  static std::string get_address_balance(const std::string &address,
+                                         const std::string &height) {
+    return ::neb::nebulas::get_account_state(address, std::stoi(height)).first;
+  }
+};
+template <> struct account_db_traits<eth_db> {
+  static std::string get_address_balance(const std::string &address,
+                                         const std::string &height) {
+    return ::neb::eth::get_address_balance(address, to_hex(height));
+  }
+};
+} // namespace internal
 
 struct account_db_info_setter {
   typedef account_info_t info_type;
@@ -153,14 +176,15 @@ public:
     return to_nas.value();
   }
 
-  virtual void set_height_address_val(int64_t start_block, int64_t end_block) {
+  virtual void set_height_address_val(
+      int64_t start_block, int64_t end_block,
+      std::unordered_map<account_address_t, account_balance_t> &addr_balance) {
     LOG(INFO) << "template account_db, init height address value begin";
     std::vector<transaction_info_t> txs =
         m_tdb_ptr
             ->read_success_and_failed_transaction_from_db_with_block_duration(
                 start_block, end_block);
     LOG(INFO) << "template account_db, read transaction done";
-    std::unordered_map<account_address_t, account_balance_t> addr_balance;
 
     for (auto it = txs.begin(); it != txs.end(); it++) {
       std::string from = it->template get<::neb::from>();
@@ -242,6 +266,12 @@ public:
     boost::property_tree::ptree p;
     convert_account_info_to_ptree(info, p);
     return base_db_t::ptree_to_string(p);
+  }
+
+  virtual std::string get_address_balance(const std::string &address,
+                                          const std::string &height) {
+    return ::neb::internal::account_db_traits<DB>::get_address_balance(address,
+                                                                       height);
   }
 
 private:

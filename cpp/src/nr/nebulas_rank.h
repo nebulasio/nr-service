@@ -46,7 +46,9 @@ public:
   auto get_account_balance_median(
       const std::unordered_set<std::string> &accounts,
       const std::vector<std::vector<transaction_info_t>> &txs,
-      const account_db_ptr_t db_ptr) -> std::unordered_map<std::string, double>;
+      const account_db_ptr_t db_ptr,
+      std::unordered_map<account_address_t, account_balance_t> &addr_balance)
+      -> std::unordered_map<std::string, double>;
 
   auto get_account_weight(
       const std::unordered_map<std::string, in_out_val> &in_out_vals,

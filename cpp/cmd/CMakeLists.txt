@@ -35,3 +35,12 @@ target_link_libraries(eth_account_writer ${common_libs} gflags)
 add_executable(statistics statistics.cpp)
 target_link_libraries(statistics ${common_libs} gflags)
 
+add_executable(monitor exchanges_monitor.cpp)
+target_link_libraries(monitor ${common_libs} gflags)
+
+add_executable(balance_writer balance_writer.cpp)
+target_link_libraries(balance_writer ${common_libs} gflags)
+
+add_executable(nr_writer nr_writer.cpp)
+target_link_libraries(nr_writer ${common_libs} gflags)
+

@@ -76,7 +76,6 @@ transaction_graph_ptr nebulas_rank::build_graph_from_transactions(
 
 std::vector<transaction_graph_ptr> nebulas_rank::build_transaction_graphs(
     const std::vector<std::vector<transaction_info_t>> &txs) {
-
   std::vector<transaction_graph_ptr> tgs;
 
   for (auto it = txs.begin(); it != txs.end(); it++) {
@@ -113,12 +112,13 @@ std::unordered_map<std::string, double>
 nebulas_rank::get_account_balance_median(
     const std::unordered_set<std::string> &accounts,
     const std::vector<std::vector<transaction_info_t>> &txs,
-    const account_db_ptr_t db_ptr) {
+    const account_db_ptr_t db_ptr,
+    std::unordered_map<account_address_t, account_balance_t> &addr_balance) {
 
   std::unordered_map<std::string, double> ret;
   std::unordered_map<std::string, std::vector<double>> addr_balance_v;
 
-  db_ptr->set_height_address_val(m_start_block, m_end_block);
+  db_ptr->set_height_address_val(m_start_block, m_end_block, addr_balance);
 
   for (auto it = txs.begin(); it != txs.end(); it++) {
     int max_height_this_interval = get_max_height_this_block_interval(*it);
@@ -234,8 +234,10 @@ nebulas_rank::get_account_score_service() {
   LOG(INFO) << "done with merge graphs.";
 
   std::unordered_set<std::string> accounts = get_normal_accounts(ret);
+  std::unordered_map<neb::account_address_t, neb::account_balance_t>
+      addr_balance;
   std::unordered_map<std::string, double> median =
-      get_account_balance_median(accounts, txs, m_adb_ptr);
+      get_account_balance_median(accounts, txs, m_adb_ptr, addr_balance);
   // for (auto it = median.begin(); it != median.end(); it++) {
   //   // LOG(INFO) << it->first << ", " << it->second;
   //   std::cout << it->first << "," << it->second << std::endl;
