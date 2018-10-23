@@ -6,7 +6,8 @@
 namespace neb {
 namespace eth {
 
-std::string get_address_type(const std::string &address);
+std::string get_address_type(const std::string &address,
+                             const std::string &hex_height);
 
 std::string get_address_balance(const std::string &address,
                                 const std::string &hex_height);

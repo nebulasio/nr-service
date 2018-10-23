@@ -103,28 +103,30 @@ void eth_transaction_db::insert_transactions_to_db(block_height_t start_block,
                                                    block_height_t end_block) {
   for (int h = start_block; h < end_block; h++) {
 
-    // LOG(INFO) << h;
+    LOG(INFO) << h;
 
     auto txs = get_block_transactions_by_height(h);
-    // LOG(INFO) << "get block transactions by height done, size: " <<
-    // txs.size();
+    LOG(INFO) << "get block transactions by height done, size: " << txs.size();
     auto internal_txs = trace_block(h);
-    // LOG(INFO) << "trace block done, size: " << internal_txs.size();
+    LOG(INFO) << "trace block done, size: " << internal_txs.size();
 
     set_transactions(txs, internal_txs);
+    LOG(INFO) << "cached address size: " << m_addr_and_type.size();
     insert_block_transactions(internal_txs);
+    LOG(INFO) << "insert block transactions done";
   }
 }
 
-std::string eth_transaction_db::get_address_type(
-    const std::string &address) {
+std::string
+eth_transaction_db::get_address_type(const std::string &address,
+                                     const std::string &hex_height) {
 
   auto it = m_addr_and_type.find(address);
   if (it != m_addr_and_type.end()) {
     return it->second;
   }
 
-  std::string type = ::neb::eth::get_address_type(address);
+  std::string type = ::neb::eth::get_address_type(address, hex_height);
   m_addr_and_type.insert(std::make_pair(address, type));
   return type;
 }
@@ -140,8 +142,12 @@ void eth_transaction_db::set_transactions(
 
     std::string from = it_internal_tx->template get<::neb::from>();
     std::string to = it_internal_tx->template get<::neb::to>();
-    std::string type_from = get_address_type(from);
-    std::string type_to = get_address_type(to);
+    std::string type_from = get_address_type(
+        from,
+        to_hex(std::to_string(it_internal_tx->template get<::neb::height>())));
+    std::string type_to = get_address_type(
+        to,
+        to_hex(std::to_string(it_internal_tx->template get<::neb::height>())));
 
     std::string timestamp = it_tx->template get<::neb::timestamp>();
     std::string gas_price = it_tx->template get<::neb::gas_price>();

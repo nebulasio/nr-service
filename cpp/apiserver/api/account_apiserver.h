@@ -29,7 +29,7 @@ template <> struct account_apiserver_traits<neb::eth_db> {
         std::getenv("DB_PASSWORD"), std::getenv("ETH_DB"));
   }
   static bool is_address_valid(const std::string &address) {
-    std::string address_type = ::neb::eth::get_address_type(address);
+    std::string address_type = ::neb::eth::get_address_type(address, "0x0");
     return address_type.compare("normal") == 0 ||
            address_type.compare("contract") == 0;
   }
@@ -92,4 +92,3 @@ protected:
   std::unique_ptr<account_cache_t> m_cache_ptr;
   account_db_ptr_t m_ac_ptr;
 };
-

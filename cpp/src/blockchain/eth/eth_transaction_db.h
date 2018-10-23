@@ -20,7 +20,8 @@ public:
 private:
   void set_transactions(const std::vector<transaction_info_t> &txs,
                         std::vector<transaction_info_t> &internal_txs);
-  std::string get_address_type(const std::string &address);
+  std::string get_address_type(const std::string &address,
+                               const std::string &hex_height);
 
   void insert_block_transactions(const std::vector<transaction_info_t> &txs);
   void insert_transaction(VPackBuilder &builder_arr,

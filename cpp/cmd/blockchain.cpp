@@ -67,7 +67,7 @@ void transaction_reader(const nebulas_transaction_db_ptr_t ptr,
 void account_reader(const nebulas_account_db_ptr_t ac_ptr,
                     neb::block_height_t start_block,
                     neb::block_height_t end_block) {
-  ac_ptr->set_height_address_val(start_block, end_block);
+  // ac_ptr->set_height_address_val(start_block, end_block);
   // double value = ac_ptr->get_normalized_value(100);
   // LOG(INFO) << value;
 }

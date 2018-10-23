@@ -33,7 +33,7 @@ template <> struct transaction_apiserver_traits<neb::eth_db> {
         std::getenv("DB_PASSWORD"), std::getenv("ETH_DB"));
   }
   static bool is_address_valid(const std::string &address) {
-    std::string type = ::neb::eth::get_address_type(address);
+    std::string type = ::neb::eth::get_address_type(address, "0x0");
     return type.compare("invalid") != 0 && type.compare("none") != 0;
   }
 };

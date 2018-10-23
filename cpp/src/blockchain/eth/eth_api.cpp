@@ -55,14 +55,14 @@ std::string json_parse_eth_code(const std::string &json) {
                               : std::string("invalid");
 }
 
-std::string eth_get_code(const std::string &address) {
+std::string eth_get_code(const std::string &address,
+                         const std::string hex_height) {
   std::string cmd = boost::str(
-      boost::format(
-          "curl -s --data "
-          "'{\"method\":\"eth_getCode\",\"params\":[\"%1%\"],\"id\":1,"
-          "\"jsonrpc\":\"2.0\"}' -H \"Content-Type: application/json\" -X "
-          "POST localhost:8545") %
-      address);
+      boost::format("curl -s --data "
+                    "'{\"method\":\"eth_getCode\",\"params\":[\"%1%\",\"%2%\"],"
+                    "\"id\":1,\"jsonrpc\":\"2.0\"}' -H \"Content-Type: "
+                    "application/json\" -X POST localhost:8545") %
+      address % hex_height);
   std::string ret = get_stdout_from_command(cmd);
   std::vector<std::string> v = split_by_comma(ret, '\n');
 
@@ -75,11 +75,12 @@ std::string eth_get_code(const std::string &address) {
   return json_parse_eth_code(resp);
 }
 
-std::string get_address_type(const std::string &address) {
+std::string get_address_type(const std::string &address,
+                             const std::string &hex_height) {
   if (address.compare("none") == 0) {
     return std::string("none");
   }
-  std::string eth_code = eth_get_code(address);
+  std::string eth_code = eth_get_code(address, hex_height);
   if (eth_code.compare("invalid") == 0) {
     return eth_code;
   }
