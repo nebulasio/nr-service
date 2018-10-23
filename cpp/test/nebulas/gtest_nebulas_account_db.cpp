@@ -22,7 +22,7 @@ TEST(test_nebulas_account_db, test_append_account_to_db_full) {
               << balance << ',' << account_type;
 
     std::pair<std::string, int> account_state =
-        neb::nebulas::get_account_state(height, address);
+        neb::nebulas::get_account_state(address, height);
 
     EXPECT_TRUE(balance.compare(account_state.first) == 0);
 

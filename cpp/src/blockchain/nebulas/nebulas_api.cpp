@@ -53,8 +53,8 @@ std::pair<std::string, int> json_parse_account_state(const std::string &json) {
   return std::make_pair(balance, type);
 }
 
-std::pair<std::string, int> get_account_state(block_height_t height,
-                                              const std::string &address) {
+std::pair<std::string, int> get_account_state(const std::string &address,
+                                              block_height_t height) {
   std::string cmd =
       "curl -s -H 'Content-Type: application/json' -X POST "
       "http://localhost:8685/v1/user/accountstate -d '{\"height\": " +
@@ -77,7 +77,7 @@ std::pair<std::string, int> get_account_state(block_height_t height,
 }
 
 int32_t is_contract_address(const std::string &address) {
-  // int type = get_account_state(0, address).second;
+  // int type = get_account_state(address, 0).second;
   // decode base58 instead of rpc calling
   std::vector<unsigned char> v;
   /*
