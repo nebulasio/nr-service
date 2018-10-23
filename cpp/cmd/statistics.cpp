@@ -2,6 +2,7 @@
 #include "blockchain.h"
 #include "utils.h"
 
+DEFINE_bool(loop, true, "run permenantly");
 DEFINE_int32(start_ts, 0, "the first day end timestamp");
 DEFINE_int32(end_ts, 1, "the last day end timestamp");
 
@@ -79,13 +80,13 @@ active_addr_t active_account_or_contract_numbers_with_duration(
 void time_wait(time_t time_sec) {
   boost::asio::io_service io;
   boost::asio::deadline_timer t(io, boost::posix_time::seconds(time_sec));
-  LOG(INFO) << "waiting...";
   t.wait();
 }
 
 int main(int argc, char *argv[]) {
 
   gflags::ParseCommandLineFlags(&argc, &argv, true);
+  bool loop = FLAGS_loop;
   int32_t start_ts = FLAGS_start_ts;
   int32_t end_ts = FLAGS_end_ts;
 
@@ -103,6 +104,39 @@ int main(int argc, char *argv[]) {
           std::getenv("DB_PASSWORD"), std::getenv("NEBULAS_DB"));
 
   time_t seconds_of_day = 24 * 60 * 60;
+
+  if (loop) {
+    while (true) {
+      time_t end_time = neb::get_universal_timestamp();
+      LOG(INFO) << end_time % seconds_of_day;
+      if (end_time % seconds_of_day < 60) {
+        time_t start_time = end_time - seconds_of_day;
+        // using start time as date
+        std::string date = neb::time_t_to_date(start_time);
+
+        std::string start_ts = std::to_string(start_time);
+        std::string end_ts = std::to_string(end_time);
+
+        int32_t contract_nums = smart_contract_total_numbers(ac_ptr, end_ts);
+        active_addr_t active_nums =
+            active_account_or_contract_numbers_with_duration(tx_ptr, start_ts,
+                                                             end_ts);
+        neb::nebulas::statistics_info_t info;
+        info.template set<::neb::nebulas::date, ::neb::nebulas::contract_nums,
+                          ::neb::nebulas::active_contract_nums,
+                          ::neb::nebulas::active_account_nums>(
+            date, contract_nums, active_nums.active_contract_nums,
+            active_nums.active_account_nums);
+        st_ptr->insert_statistics(info);
+
+        LOG(INFO) << "date: " << date << ',' << contract_nums << ','
+                  << active_nums.active_contract_nums << ','
+                  << active_nums.active_account_nums;
+      }
+      time_wait(60);
+    }
+  }
+
   for (time_t ts = start_ts; ts < end_ts; ts += seconds_of_day) {
     time_t s = ts;
     time_t e = ts + seconds_of_day;
@@ -113,25 +147,7 @@ int main(int argc, char *argv[]) {
     active_addr_t active_nums =
         active_account_or_contract_numbers_with_duration(
             tx_ptr, std::to_string(s), std::to_string(e));
-    LOG(INFO) << "date: " << date << ',' << contract_nums << ','
-              << active_nums.active_contract_nums << ','
-              << active_nums.active_account_nums;
-  }
-  return 0;
 
-  while (true) {
-    time_t end_time = neb::get_universal_timestamp();
-    time_t start_time = end_time - seconds_of_day;
-    // using start time or end time as date
-    std::string date = neb::time_t_to_date(end_time);
-
-    std::string start_ts = std::to_string(start_time);
-    std::string end_ts = std::to_string(end_time);
-
-    int32_t contract_nums = smart_contract_total_numbers(ac_ptr, end_ts);
-    active_addr_t active_nums =
-        active_account_or_contract_numbers_with_duration(tx_ptr, start_ts,
-                                                         end_ts);
     neb::nebulas::statistics_info_t info;
     info.template set<::neb::nebulas::date, ::neb::nebulas::contract_nums,
                       ::neb::nebulas::active_contract_nums,
@@ -143,7 +159,6 @@ int main(int argc, char *argv[]) {
     LOG(INFO) << "date: " << date << ',' << contract_nums << ','
               << active_nums.active_contract_nums << ','
               << active_nums.active_account_nums;
-    time_wait(15);
   }
   return 0;
 }
