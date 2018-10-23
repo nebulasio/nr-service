@@ -48,7 +48,7 @@ public:
       return err_code_params_not_matched;
     }
     std::string date = params.find("date")->second;
-    if (!neb::is_number(date)) {
+    if (!neb::string_utils::is_number(date)) {
       LOG(WARNING)
           << "params value invalid, date value contains unexpected character";
       return err_code_params_value_invalid;

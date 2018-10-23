@@ -26,8 +26,8 @@ block_height_t json_parse_neb_state(const std::string &json) {
 block_height_t get_block_height() {
   std::string cmd = "curl -s -H 'Content-Type: application/json' -X GET "
                     "http://localhost:8685/v1/user/nebstate";
-  std::string ret = get_stdout_from_command(cmd);
-  std::vector<std::string> v = split_by_comma(ret, '\n');
+  std::string ret = file_utils::get_stdout_from_command(cmd);
+  std::vector<std::string> v = file_utils::split_by_comma(ret, '\n');
 
   if (v.empty()) {
     return -1;
@@ -65,8 +65,8 @@ std::pair<std::string, int> get_account_state(const std::string &address,
           address + "\"}'";
   }
   // std::cout << cmd << std::endl;
-  std::string ret = get_stdout_from_command(cmd);
-  std::vector<std::string> v = split_by_comma(ret, '\n');
+  std::string ret = file_utils::get_stdout_from_command(cmd);
+  std::vector<std::string> v = file_utils::split_by_comma(ret, '\n');
 
   if (v.empty()) {
     return std::make_pair("", -1);
@@ -185,8 +185,8 @@ get_block_transactions_by_height(block_height_t height,
       "curl -s -H 'Content-Type: application/json' -X POST "
       "http://localhost:8685/v1/user/getBlockByHeight -d '{\"height\": " +
       std::to_string(height) + ", \"full_fill_transaction\": true}'";
-  std::string ret = get_stdout_from_command(cmd);
-  std::vector<std::string> v = split_by_comma(ret, '\n');
+  std::string ret = file_utils::get_stdout_from_command(cmd);
+  std::vector<std::string> v = file_utils::split_by_comma(ret, '\n');
 
   if (v.empty()) {
     return std::vector<transaction_info_t>();
@@ -221,8 +221,8 @@ std::string get_block_timestamp_by_height(block_height_t height) {
       "curl -s -H 'Content-Type: application/json' -X POST "
       "http://localhost:8685/v1/user/getBlockByHeight -d '{\"height\": " +
       std::to_string(height) + ", \"full_fill_transaction\": true}'";
-  std::string ret = get_stdout_from_command(cmd);
-  std::vector<std::string> v = split_by_comma(ret, '\n');
+  std::string ret = file_utils::get_stdout_from_command(cmd);
+  std::vector<std::string> v = file_utils::split_by_comma(ret, '\n');
 
   if (v.empty()) {
     return std::string();
@@ -284,8 +284,8 @@ std::vector<event_t> get_events_by_hash(const std::string &hash,
       "curl -s -H 'Content-Type: application/json' -X POST "
       "http://localhost:8685/v1/user/getEventsByHash -d '{\"hash\":\"" +
       hash + "\"}'";
-  std::string ret = get_stdout_from_command(cmd);
-  std::vector<std::string> v = split_by_comma(ret, '\n');
+  std::string ret = file_utils::get_stdout_from_command(cmd);
+  std::vector<std::string> v = file_utils::split_by_comma(ret, '\n');
 
   if (v.empty()) {
     return std::vector<event_t>();

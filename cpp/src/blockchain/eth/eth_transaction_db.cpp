@@ -143,11 +143,11 @@ void eth_transaction_db::set_transactions(
     std::string from = it_internal_tx->template get<::neb::from>();
     std::string to = it_internal_tx->template get<::neb::to>();
     std::string type_from = get_address_type(
-        from,
-        to_hex(std::to_string(it_internal_tx->template get<::neb::height>())));
+        from, string_utils::to_hex(std::to_string(
+                  it_internal_tx->template get<::neb::height>())));
     std::string type_to = get_address_type(
-        to,
-        to_hex(std::to_string(it_internal_tx->template get<::neb::height>())));
+        to, string_utils::to_hex(
+                std::to_string(it_internal_tx->template get<::neb::height>())));
 
     std::string timestamp = it_tx->template get<::neb::timestamp>();
     std::string gas_price = it_tx->template get<::neb::gas_price>();

@@ -107,12 +107,12 @@ int main(int argc, char *argv[]) {
 
   if (loop) {
     while (true) {
-      time_t end_time = neb::get_universal_timestamp();
+      time_t end_time = neb::time_utils::get_universal_timestamp();
       LOG(INFO) << end_time % seconds_of_day;
       if (end_time % seconds_of_day < 60) {
         time_t start_time = end_time - seconds_of_day;
         // using start time as date
-        std::string date = neb::time_t_to_date(start_time);
+        std::string date = neb::time_utils::time_t_to_date(start_time);
 
         std::string start_ts = std::to_string(start_time);
         std::string end_ts = std::to_string(end_time);
@@ -140,7 +140,7 @@ int main(int argc, char *argv[]) {
   for (time_t ts = start_ts; ts < end_ts; ts += seconds_of_day) {
     time_t s = ts;
     time_t e = ts + seconds_of_day;
-    std::string date = neb::time_t_to_date(s);
+    std::string date = neb::time_utils::time_t_to_date(s);
 
     int32_t contract_nums =
         smart_contract_total_numbers(ac_ptr, std::to_string(e));

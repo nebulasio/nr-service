@@ -28,8 +28,8 @@ std::string get_address_balance(const std::string &address,
                     "\"],\"id\":1,\"jsonrpc\":\"2.0\"}' -H \"Content-Type: "
                     "application/json\" -X POST localhost:8545") %
       address % hex_height);
-  std::string ret = get_stdout_from_command(cmd);
-  std::vector<std::string> v = split_by_comma(ret, '\n');
+  std::string ret = file_utils::get_stdout_from_command(cmd);
+  std::vector<std::string> v = file_utils::split_by_comma(ret, '\n');
 
   if (v.empty()) {
     LOG(INFO) << "eth get balance empty";
@@ -63,8 +63,8 @@ std::string eth_get_code(const std::string &address,
                     "\"id\":1,\"jsonrpc\":\"2.0\"}' -H \"Content-Type: "
                     "application/json\" -X POST localhost:8545") %
       address % hex_height);
-  std::string ret = get_stdout_from_command(cmd);
-  std::vector<std::string> v = split_by_comma(ret, '\n');
+  std::string ret = file_utils::get_stdout_from_command(cmd);
+  std::vector<std::string> v = file_utils::split_by_comma(ret, '\n');
 
   if (v.empty()) {
     LOG(INFO) << "eth get code empty";
@@ -99,7 +99,7 @@ block_height_t json_parse_eth_block_number(const std::string &json) {
   }
 
   std::string height = pt.get<std::string>("result");
-  return std::stoi(to_dec(height));
+  return std::stoi(string_utils::to_dec(height));
 }
 
 block_height_t get_block_height() {
@@ -107,8 +107,8 @@ block_height_t get_block_height() {
       "curl -s --data "
       "'{\"method\":\"eth_blockNumber\",\"params\":[],\"id\":1,\"jsonrpc\":\"2."
       "0\"}' -H \"Content-Type: application/json\" -X POST localhost:8545");
-  std::string ret = get_stdout_from_command(cmd);
-  std::vector<std::string> v = split_by_comma(ret, '\n');
+  std::string ret = file_utils::get_stdout_from_command(cmd);
+  std::vector<std::string> v = file_utils::split_by_comma(ret, '\n');
 
   if (v.empty()) {
     LOG(INFO) << "get block height empty";
@@ -130,7 +130,8 @@ json_parse_eth_block_transactions(const std::string &json) {
   }
 
   boost::property_tree::ptree result = pt.get_child("result");
-  std::string timestamp = to_dec(result.get<std::string>("timestamp"));
+  std::string timestamp =
+      string_utils::to_dec(result.get<std::string>("timestamp"));
 
   boost::property_tree::ptree transactions = result.get_child("transactions");
   std::vector<transaction_info_t> tx_v;
@@ -138,7 +139,8 @@ json_parse_eth_block_transactions(const std::string &json) {
   BOOST_FOREACH (boost::property_tree::ptree::value_type &v, transactions) {
     boost::property_tree::ptree tx = v.second;
     std::string hash = tx.get<std::string>("hash");
-    std::string gas_price = to_dec(tx.get<std::string>("gasPrice"));
+    std::string gas_price =
+        string_utils::to_dec(tx.get<std::string>("gasPrice"));
 
     transaction_info_t info;
     info.template set<::neb::timestamp, ::neb::hash, ::neb::gas_price>(
@@ -161,9 +163,9 @@ get_block_transactions_by_height(block_height_t height) {
                     "'{\"method\":\"eth_getBlockByNumber\",\"params\":[\"%1%\","
                     "true],\"id\":1,\"jsonrpc\":\"2.0\"}' -H \"Content-Type: "
                     "application/json\" -X POST localhost:8545") %
-      to_hex(std::to_string(height)));
-  std::string ret = get_stdout_from_command(cmd);
-  std::vector<std::string> v = split_by_comma(ret, '\n');
+      string_utils::to_hex(std::to_string(height)));
+  std::string ret = file_utils::get_stdout_from_command(cmd);
+  std::vector<std::string> v = file_utils::split_by_comma(ret, '\n');
 
   if (v.empty()) {
     LOG(INFO) << "get block transactions by height empty";
@@ -192,9 +194,11 @@ transaction_info_t parse_by_action_type(const boost::property_tree::ptree &pt) {
   auto f_create = [&]() {
     std::string from = action.get<std::string>("from");
     std::string to = from;
-    std::string tx_value = to_dec(action.get<std::string>("value"));
+    std::string tx_value =
+        string_utils::to_dec(action.get<std::string>("value"));
     std::string data = action.get<std::string>("init");
-    std::string gas_limit = to_dec(action.get<std::string>("gas"));
+    std::string gas_limit =
+        string_utils::to_dec(action.get<std::string>("gas"));
     info.template set<::neb::from, ::neb::to, ::neb::tx_value, ::neb::data,
                       ::neb::gas_limit>(from, to, tx_value, data, gas_limit);
     if (!status) {
@@ -202,36 +206,42 @@ transaction_info_t parse_by_action_type(const boost::property_tree::ptree &pt) {
     }
     boost::property_tree::ptree result = pt.get_child("result");
     std::string contract_address = result.get<std::string>("address");
-    std::string gas_used = to_dec(result.get<std::string>("gasUsed"));
+    std::string gas_used =
+        string_utils::to_dec(result.get<std::string>("gasUsed"));
     info.template set<::neb::contract_address, ::neb::gas_used>(
         contract_address, gas_used);
   };
   auto f_call = [&]() {
     std::string from = action.get<std::string>("from");
     std::string to = action.get<std::string>("to");
-    std::string tx_value = to_dec(action.get<std::string>("value"));
+    std::string tx_value =
+        string_utils::to_dec(action.get<std::string>("value"));
     std::string data = action.get<std::string>("input");
-    std::string gas_limit = to_dec(action.get<std::string>("gas"));
+    std::string gas_limit =
+        string_utils::to_dec(action.get<std::string>("gas"));
     info.template set<::neb::from, ::neb::to, ::neb::tx_value, ::neb::data,
                       ::neb::gas_limit>(from, to, tx_value, data, gas_limit);
     if (!status) {
       return;
     }
     boost::property_tree::ptree result = pt.get_child("result");
-    std::string gas_used = to_dec(result.get<std::string>("gasUsed"));
+    std::string gas_used =
+        string_utils::to_dec(result.get<std::string>("gasUsed"));
     info.template set<::neb::gas_used>(gas_used);
   };
   auto f_reward = [&]() {
     std::string from = "none";
     std::string to = action.get<std::string>("author");
-    std::string tx_value = to_dec(action.get<std::string>("value"));
+    std::string tx_value =
+        string_utils::to_dec(action.get<std::string>("value"));
     info.template set<::neb::from, ::neb::to, ::neb::tx_value>(from, to,
                                                                tx_value);
   };
   auto f_suicide = [&]() {
     std::string from = action.get<std::string>("address");
     std::string to = action.get<std::string>("refundAddress");
-    std::string tx_value = to_dec(action.get<std::string>("balance"));
+    std::string tx_value =
+        string_utils::to_dec(action.get<std::string>("balance"));
     info.template set<::neb::from, ::neb::to, ::neb::tx_value>(from, to,
                                                                tx_value);
   };
@@ -271,9 +281,9 @@ std::vector<transaction_info_t> trace_block(block_height_t height) {
                     "'{\"method\":\"trace_block\",\"params\":[\"%1%\"],\"id\":"
                     "1,\"jsonrpc\":\"2.0\"}' -H \"Content-Type: "
                     "application/json\" -X POST localhost:8545") %
-      to_hex(std::to_string(height)));
-  std::string ret = get_stdout_from_command(cmd);
-  std::vector<std::string> v = split_by_comma(ret, '\n');
+      string_utils::to_hex(std::to_string(height)));
+  std::string ret = file_utils::get_stdout_from_command(cmd);
+  std::vector<std::string> v = file_utils::split_by_comma(ret, '\n');
 
   if (v.empty()) {
     LOG(INFO) << "trace block empty";

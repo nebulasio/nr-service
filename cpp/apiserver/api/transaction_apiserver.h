@@ -98,7 +98,8 @@ private:
 
     std::string s_start_block = params.find("start_block")->second;
     std::string s_end_block = params.find("end_block")->second;
-    if (!neb::is_number(s_start_block) || !neb::is_number(s_end_block)) {
+    if (!neb::string_utils::is_number(s_start_block) ||
+        !neb::string_utils::is_number(s_end_block)) {
       LOG(WARNING) << "params value invalid, start_block/end_block value "
                       "contains unexpected character";
       return err_code_params_value_invalid;

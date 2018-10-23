@@ -3,7 +3,7 @@
 
 namespace neb {
 
-std::string get_stdout_from_command(std::string &cmd) {
+std::string file_utils::get_stdout_from_command(std::string &cmd) {
   std::string data;
   FILE *stream;
   const int max_buffer = 256;
@@ -22,7 +22,8 @@ std::string get_stdout_from_command(std::string &cmd) {
   return data;
 }
 
-std::vector<std::string> split_by_comma(const std::string &str, char comma) {
+std::vector<std::string> file_utils::split_by_comma(const std::string &str,
+                                                    char comma) {
   std::vector<std::string> v;
   std::stringstream ss(str);
   std::string token;
@@ -33,8 +34,8 @@ std::vector<std::string> split_by_comma(const std::string &str, char comma) {
   return v;
 }
 
-void read_lines_from_file(const std::string &file,
-                          std::vector<std::string> &lines) {
+void file_utils::read_lines_from_file(const std::string &file,
+                                      std::vector<std::string> &lines) {
   std::ifstream f(file);
   std::string line;
   if (f.is_open()) {
@@ -45,16 +46,10 @@ void read_lines_from_file(const std::string &file,
   }
 }
 
-bool is_number(const std::string &s) {
-  return !s.empty() && std::find_if(s.begin(), s.end(), [](char ch) {
-                         return !std::isdigit(ch);
-                       }) == s.end();
-}
-
 /*
  * fill prefix zero to number at most $digit digits
  * */
-std::string fill_prefix_zero(int number, int digit) {
+std::string time_utils::fill_prefix_zero(int number, int digit) {
   std::ostringstream out;
   out << std::internal << std::setfill('0') << std::setw(digit) << number;
   return out.str();
@@ -63,7 +58,8 @@ std::string fill_prefix_zero(int number, int digit) {
 /*
  * convert ptime (contruct from string) in local time to ptime in utc time
  * */
-boost::posix_time::ptime ptime_str_to_ptime(const std::string &ptime_str) {
+boost::posix_time::ptime
+time_utils::ptime_str_to_ptime(const std::string &ptime_str) {
 
   boost::posix_time::ptime time_local =
       boost::posix_time::time_from_string(ptime_str);
@@ -74,12 +70,13 @@ boost::posix_time::ptime ptime_str_to_ptime(const std::string &ptime_str) {
   return cn_eastern::local_to_utc(time_local);
 }
 
-time_t ptime_str_to_time_t(const std::string &ptime_str) {
+time_t time_utils::ptime_str_to_time_t(const std::string &ptime_str) {
   boost::posix_time::ptime time_utc = ptime_str_to_ptime(ptime_str);
   return boost::posix_time::to_time_t(time_utc);
 }
 
-std::string replace_month_str_to_month_of_year(std::string &simple_str) {
+std::string
+time_utils::replace_month_str_to_month_of_year(std::string &simple_str) {
 
   std::string months[] = {"Jan", "Feb", "Mar", "Apr", "May", "Jun",
                           "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
@@ -96,20 +93,20 @@ std::string replace_month_str_to_month_of_year(std::string &simple_str) {
   return std::string();
 }
 
-std::string
-ptime_str_local_to_ptime_str_utc(const std::string &ptime_str_local) {
+std::string time_utils::ptime_str_local_to_ptime_str_utc(
+    const std::string &ptime_str_local) {
   boost::posix_time::ptime time_utc = ptime_str_to_ptime(ptime_str_local);
   std::string simple_str = boost::posix_time::to_simple_string(time_utc);
   return replace_month_str_to_month_of_year(simple_str);
 }
 
-time_t get_universal_timestamp() {
+time_t time_utils::get_universal_timestamp() {
   boost::posix_time::ptime time_utc(
       boost::posix_time::second_clock::universal_time());
   return boost::posix_time::to_time_t(time_utc);
 }
 
-std::string time_t_to_date(time_t t) {
+std::string time_utils::time_t_to_date(time_t t) {
   boost::posix_time::ptime pt = boost::posix_time::from_time_t(t);
   boost::gregorian::date date = pt.date();
   std::ostringstream oss;
@@ -120,7 +117,7 @@ std::string time_t_to_date(time_t t) {
   return replace_month_str_to_month_of_year(s);
 }
 
-std::string to_dec(const std::string &hex_str) {
+std::string string_utils::to_dec(const std::string &hex_str) {
   std::stringstream ss;
   ss << std::hex << hex_str;
   int128_t tmp;
@@ -128,11 +125,17 @@ std::string to_dec(const std::string &hex_str) {
   return boost::lexical_cast<std::string>(tmp);
 }
 
-std::string to_hex(const std::string &dec_str) {
+std::string string_utils::to_hex(const std::string &dec_str) {
   int128_t tmp = boost::lexical_cast<int128_t>(dec_str);
   std::stringstream ss;
   ss << "0x" << std::hex << tmp;
   return boost::algorithm::to_lower_copy(ss.str());
+}
+
+bool string_utils::is_number(const std::string &s) {
+  return !s.empty() && std::find_if(s.begin(), s.end(), [](char ch) {
+                         return !std::isdigit(ch);
+                       }) == s.end();
 }
 
 } // namespace neb

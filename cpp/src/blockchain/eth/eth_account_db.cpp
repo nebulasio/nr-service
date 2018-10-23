@@ -38,11 +38,11 @@ void eth_account_db::insert_account_to_db(block_height_t start_block,
               << ", left to update: " << sorted_info.size() - cnt;
     cnt++;
 
-    std::string balance =
-        get_address_balance(address, to_hex(std::to_string(height)));
+    std::string balance = get_address_balance(
+        address, string_utils::to_hex(std::to_string(height)));
 
     account_info_t &info = it->second;
-    info.template set<::neb::balance>(to_dec(balance));
+    info.template set<::neb::balance>(string_utils::to_dec(balance));
 
     insert_account(info);
   }

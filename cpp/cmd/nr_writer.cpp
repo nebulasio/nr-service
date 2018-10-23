@@ -171,7 +171,7 @@ void write_to_nebulas_rank_db(const tdb_ptr_t tdb_ptr, const adb_ptr_t adb_ptr,
   neb::block_height_t start_block =
       txs_in_start_last_minute.back().template get<::neb::height>();
 
-  std::string date = neb::time_t_to_date(start_ts);
+  std::string date = neb::time_utils::time_t_to_date(start_ts);
   LOG(INFO) << date;
   nebulas_rank_detail(tdb_ptr, adb_ptr, ndb_ptr, bdb_ptr, date, start_block,
                       end_block);

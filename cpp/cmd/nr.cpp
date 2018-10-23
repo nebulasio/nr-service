@@ -93,7 +93,7 @@ void write_to_balance_db(tdb_ptr_t tdb_ptr, adb_ptr_t adb_ptr,
   neb::block_height_t start_block =
       txs_in_start_last_minute.back().template get<::neb::height>();
 
-  std::string date = neb::time_t_to_date(start_ts);
+  std::string date = neb::time_utils::time_t_to_date(start_ts);
   LOG(INFO) << date << ',' << start_block << ',' << end_block;
   write_date_balance(tdb_ptr, adb_ptr, bdb_ptr, date, start_block, end_block);
 }
@@ -242,7 +242,7 @@ void write_to_nebulas_rank_db(const tdb_ptr_t tdb_ptr, const adb_ptr_t adb_ptr,
   neb::block_height_t start_block =
       txs_in_start_last_minute.back().template get<::neb::height>();
 
-  std::string date = neb::time_t_to_date(start_ts);
+  std::string date = neb::time_utils::time_t_to_date(start_ts);
   nebulas_rank_detail(tdb_ptr, adb_ptr, ndb_ptr, bdb_ptr, date, start_block,
                       end_block);
   return;
@@ -309,7 +309,7 @@ int main(int argc, char *argv[]) {
   time_t seconds_of_day = 24 * 60 * 60;
 
   while (true) {
-    time_t time_now = neb::get_universal_timestamp();
+    time_t time_now = neb::time_utils::get_universal_timestamp();
     LOG(INFO) << time_now % seconds_of_day;
     if (time_now % seconds_of_day < 60) {
       write_to_balance_db(tdb_ptr, adb_ptr, bdb_ptr, time_now);
