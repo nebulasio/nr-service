@@ -99,7 +99,7 @@ block_height_t eth_api::json_parse_eth_block_number(const std::string &json) {
   }
 
   std::string height = pt.get<std::string>("result");
-  return std::stoi(string_utils::to_dec(height));
+  return std::stoll(string_utils::to_dec(height));
 }
 
 block_height_t eth_api::get_block_height() {

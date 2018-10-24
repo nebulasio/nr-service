@@ -57,7 +57,7 @@ struct transaction_db_infosetter {
   static void set_info(transaction_info_t &info, const VPackSlice &slice,
                        const std::string &key) {
     if (key.compare("tx_id") == 0) {
-      info.template set<::neb::tx_id>(std::stoi(slice.copyString()));
+      info.template set<::neb::tx_id>(std::stoll(slice.copyString()));
     }
     if (key.compare("status") == 0) {
       info.template set<::neb::status>(slice.getInt());

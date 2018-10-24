@@ -49,7 +49,7 @@ template <> struct account_db_traits<nebulas_db> {
   static std::string get_address_balance(const std::string &address,
                                          const std::string &height) {
     return ::neb::nebulas::nebulas_api::get_account_state(address,
-                                                          std::stoi(height))
+                                                          std::stoll(height))
         .first;
   }
 };

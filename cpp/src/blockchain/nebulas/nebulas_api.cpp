@@ -100,7 +100,7 @@ block_height_t nebulas_api::json_parse_neb_state(const std::string &json) {
 
   boost::property_tree::ptree result = pt.get_child("result");
   std::string height = result.get<std::string>("height");
-  return std::stoi(height);
+  return std::stoll(height);
 }
 
 block_height_t nebulas_api::get_block_height() {

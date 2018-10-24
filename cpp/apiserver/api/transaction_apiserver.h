@@ -105,8 +105,8 @@ private:
       return err_code_params_value_invalid;
     }
 
-    neb::block_height_t start_block = std::stoi(s_start_block);
-    neb::block_height_t end_block = std::stoi(s_end_block);
+    neb::block_height_t start_block = std::stoll(s_start_block);
+    neb::block_height_t end_block = std::stoll(s_end_block);
 
     height_transaction_cache_t &cache = *m_height_transaction_cache_ptr;
     std::shared_ptr<std::vector<neb::transaction_info_t>> txs =

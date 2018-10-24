@@ -45,7 +45,7 @@ int64_t nebulas_transaction_db::get_max_tx_id_from_db(block_height_t height) {
   if (transaction_doc.isNone() || transaction_doc.isEmptyArray()) {
     return 0;
   }
-  return std::stoi(transaction_doc.at(0).copyString());
+  return std::stoll(transaction_doc.at(0).copyString());
 }
 
 template <class T>
