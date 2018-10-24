@@ -7,7 +7,7 @@
 namespace neb {
 namespace eth {
 
-std::string json_parse_eth_balance(const std::string &json) {
+std::string eth_api::json_parse_eth_balance(const std::string &json) {
   boost::property_tree::ptree pt;
   std::stringstream ss(json);
 
@@ -20,8 +20,8 @@ std::string json_parse_eth_balance(const std::string &json) {
   return pt.get<std::string>("result");
 }
 
-std::string get_address_balance(const std::string &address,
-                                const std::string &hex_height) {
+std::string eth_api::get_address_balance(const std::string &address,
+                                         const std::string &hex_height) {
   std::string cmd = boost::str(
       boost::format("curl -s --data "
                     "'{\"method\":\"eth_getBalance\",\"params\":[\"%1%\",\"%2%"
@@ -40,7 +40,7 @@ std::string get_address_balance(const std::string &address,
   return json_parse_eth_balance(resp);
 }
 
-std::string json_parse_eth_code(const std::string &json) {
+std::string eth_api::json_parse_eth_code(const std::string &json) {
   boost::property_tree::ptree pt;
   std::stringstream ss(json);
 
@@ -55,8 +55,8 @@ std::string json_parse_eth_code(const std::string &json) {
                               : std::string("invalid");
 }
 
-std::string eth_get_code(const std::string &address,
-                         const std::string hex_height) {
+std::string eth_api::eth_get_code(const std::string &address,
+                                  const std::string hex_height) {
   std::string cmd = boost::str(
       boost::format("curl -s --data "
                     "'{\"method\":\"eth_getCode\",\"params\":[\"%1%\",\"%2%\"],"
@@ -75,8 +75,8 @@ std::string eth_get_code(const std::string &address,
   return json_parse_eth_code(resp);
 }
 
-std::string get_address_type(const std::string &address,
-                             const std::string &hex_height) {
+std::string eth_api::get_address_type(const std::string &address,
+                                      const std::string &hex_height) {
   if (address.compare("none") == 0) {
     return std::string("none");
   }
@@ -88,7 +88,7 @@ std::string get_address_type(const std::string &address,
                                      : std::string("contract");
 }
 
-block_height_t json_parse_eth_block_number(const std::string &json) {
+block_height_t eth_api::json_parse_eth_block_number(const std::string &json) {
   boost::property_tree::ptree pt;
   std::stringstream ss(json);
 
@@ -102,7 +102,7 @@ block_height_t json_parse_eth_block_number(const std::string &json) {
   return std::stoi(string_utils::to_dec(height));
 }
 
-block_height_t get_block_height() {
+block_height_t eth_api::get_block_height() {
   std::string cmd = std::string(
       "curl -s --data "
       "'{\"method\":\"eth_blockNumber\",\"params\":[],\"id\":1,\"jsonrpc\":\"2."
@@ -120,7 +120,7 @@ block_height_t get_block_height() {
 }
 
 std::shared_ptr<std::vector<transaction_info_t>>
-json_parse_eth_block_transactions(const std::string &json) {
+eth_api::json_parse_eth_block_transactions(const std::string &json) {
   boost::property_tree::ptree pt;
   std::stringstream ss(json);
   try {
@@ -157,7 +157,7 @@ json_parse_eth_block_transactions(const std::string &json) {
 }
 
 std::shared_ptr<std::vector<transaction_info_t>>
-get_block_transactions_by_height(block_height_t height) {
+eth_api::get_block_transactions_by_height(block_height_t height) {
   std::string cmd = boost::str(
       boost::format("curl -s --data "
                     "'{\"method\":\"eth_getBlockByNumber\",\"params\":[\"%1%\","
@@ -176,7 +176,8 @@ get_block_transactions_by_height(block_height_t height) {
   return json_parse_eth_block_transactions(resp);
 }
 
-transaction_info_t parse_by_action_type(const boost::property_tree::ptree &pt) {
+std::shared_ptr<transaction_info_t>
+eth_api::parse_by_action_type(const boost::property_tree::ptree &pt) {
 
   transaction_info_t info;
   block_height_t height = pt.get<block_height_t>("blockNumber");
@@ -252,11 +253,11 @@ transaction_info_t parse_by_action_type(const boost::property_tree::ptree &pt) {
        {"reward", f_reward},
        {"suicide", f_suicide}});
   type_and_func.find(tx_type)->second();
-  return info;
+  return std::make_shared<transaction_info_t>(info);
 }
 
 std::shared_ptr<std::vector<transaction_info_t>>
-json_parse_trace_block(const std::string &json) {
+eth_api::json_parse_trace_block(const std::string &json) {
   boost::property_tree::ptree pt;
   std::stringstream ss(json);
   try {
@@ -270,13 +271,14 @@ json_parse_trace_block(const std::string &json) {
 
   BOOST_FOREACH (boost::property_tree::ptree::value_type &v, transactions) {
     boost::property_tree::ptree tx = v.second;
-    tx_v.push_back(parse_by_action_type(tx));
+    auto it_info = parse_by_action_type(tx);
+    tx_v.push_back(*it_info);
   }
   return std::make_shared<std::vector<transaction_info_t>>(tx_v);
 }
 
 std::shared_ptr<std::vector<transaction_info_t>>
-trace_block(block_height_t height) {
+eth_api::trace_block(block_height_t height) {
   std::string cmd = boost::str(
       boost::format("curl -s --data "
                     "'{\"method\":\"trace_block\",\"params\":[\"%1%\"],\"id\":"

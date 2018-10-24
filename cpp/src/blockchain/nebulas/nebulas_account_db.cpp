@@ -42,7 +42,7 @@ void nebulas_account_db::set_coinbase_account() {
   std::string address = "n1dZZnqKGEkb1LHYsZRei1CH6DunTio1j1q";
   block_height_t height = get_max_height_from_account();
   std::pair<std::string, account_type_t> account_state =
-      ::neb::nebulas::get_account_state(address, height);
+      ::neb::nebulas::nebulas_api::get_account_state(address, height);
   if (account_state.second == -1) {
     LOG(INFO) << "exit.";
     return;
@@ -197,14 +197,14 @@ void nebulas_account_db::append_account_to_db() {
     LOG(INFO) << "address: " << address << ", height: " << height
               << ", cnt: " << cnt++;
 
-    int32_t ret_type = is_contract_address(address);
+    int32_t ret_type = nebulas_api::is_contract_address(address);
     if (ret_type == -1) {
       return;
     }
     std::string type = (ret_type == 0 ? "normal" : "contract");
 
     std::pair<std::string, account_type_t> account_state =
-        get_account_state(address, height);
+        nebulas_api::get_account_state(address, height);
     if (account_state.second == -1) {
       LOG(INFO) << "exit.";
       return;

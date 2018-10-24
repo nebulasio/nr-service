@@ -19,8 +19,8 @@ TEST(test_nebulas_transaction_db, test_append_transaction_to_db_full) {
                 h, h + 1);
     auto res = *it_res;
 
-    auto it_v =
-        ::neb::nebulas::get_block_transactions_by_height(h, std::string());
+    auto it_v = ::neb::nebulas::nebulas_api::get_block_transactions_by_height(
+        h, std::string());
     auto v = *it_v;
     std::vector<neb::transaction_info_t> rs;
 
@@ -28,7 +28,7 @@ TEST(test_nebulas_transaction_db, test_append_transaction_to_db_full) {
       rs.push_back(v[i]);
       int32_t tx_status = v[i].template get<::neb::status>();
 
-      auto it_events = ::neb::nebulas::get_transaction_events(
+      auto it_events = ::neb::nebulas::nebulas_api::get_transaction_events(
           v[i], std::string(), tx_status);
       auto events = *it_events;
       for (auto it = events.begin(); it != events.end(); it++) {

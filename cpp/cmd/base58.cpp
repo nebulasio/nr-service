@@ -8,7 +8,7 @@ int main(int argc, char *argv[]) {
   std::string address = FLAGS_address;
 
   LOG(INFO) << "is contract address: "
-            << neb::nebulas::is_contract_address(address);
+            << neb::nebulas::nebulas_api::is_contract_address(address);
   LOG(INFO) << "address length: " << address.length();
   LOG(INFO) << "address size: " << address.size();
 

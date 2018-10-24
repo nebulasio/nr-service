@@ -48,14 +48,16 @@ template <typename TS> struct account_db_traits {};
 template <> struct account_db_traits<nebulas_db> {
   static std::string get_address_balance(const std::string &address,
                                          const std::string &height) {
-    return ::neb::nebulas::get_account_state(address, std::stoi(height)).first;
+    return ::neb::nebulas::nebulas_api::get_account_state(address,
+                                                          std::stoi(height))
+        .first;
   }
 };
 template <> struct account_db_traits<eth_db> {
   static std::string get_address_balance(const std::string &address,
                                          const std::string &height) {
-    return ::neb::eth::get_address_balance(address,
-                                           string_utils::to_hex(height));
+    return ::neb::eth::eth_api::get_address_balance(
+        address, string_utils::to_hex(height));
   }
 };
 } // namespace internal

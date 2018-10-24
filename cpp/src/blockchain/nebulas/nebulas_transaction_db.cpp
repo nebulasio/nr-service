@@ -218,18 +218,17 @@ void nebulas_transaction_db::append_transaction_to_graph() {
   block_height_t last_height = get_max_height_from_db();
   int64_t tx_id = get_max_tx_id_from_db(last_height);
   remove_transactions_this_block_height(last_height);
-  block_height_t current_height = ::neb::nebulas::get_block_height();
+  block_height_t current_height = nebulas_api::get_block_height();
 
   for (int h = last_height; h < current_height; h++) {
 
     LOG(INFO) << h;
-    std::string block_timestamp =
-        ::neb::nebulas::get_block_timestamp_by_height(h);
+    std::string block_timestamp = nebulas_api::get_block_timestamp_by_height(h);
     if (block_timestamp.compare(std::string()) == 0) {
       return;
     }
     auto it_v =
-        ::neb::nebulas::get_block_transactions_by_height(h, block_timestamp);
+        nebulas_api::get_block_transactions_by_height(h, block_timestamp);
     auto v = *it_v;
 
     std::vector<transaction_info_t> rs;
@@ -238,8 +237,8 @@ void nebulas_transaction_db::append_transaction_to_graph() {
       rs.push_back(v[i]);
       int32_t tx_status = v[i].template get<::neb::status>();
 
-      auto it_events = ::neb::nebulas::get_transaction_events(
-          v[i], block_timestamp, tx_status);
+      auto it_events =
+          nebulas_api::get_transaction_events(v[i], block_timestamp, tx_status);
       auto events = *it_events;
       for (auto it = events.begin(); it != events.end(); it++) {
         it->template set<::neb::tx_id>(++tx_id);

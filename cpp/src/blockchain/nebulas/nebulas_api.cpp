@@ -8,36 +8,8 @@
 namespace neb {
 namespace nebulas {
 
-block_height_t json_parse_neb_state(const std::string &json) {
-  boost::property_tree::ptree pt;
-  std::stringstream ss(json);
-
-  try {
-    boost::property_tree::read_json(ss, pt);
-  } catch (boost::property_tree::ptree_error &e) {
-    return -1;
-  }
-
-  boost::property_tree::ptree result = pt.get_child("result");
-  std::string height = result.get<std::string>("height");
-  return std::stoi(height);
-}
-
-block_height_t get_block_height() {
-  std::string cmd = "curl -s -H 'Content-Type: application/json' -X GET "
-                    "http://localhost:8685/v1/user/nebstate";
-  std::string ret = file_utils::get_stdout_from_command(cmd);
-  std::vector<std::string> v = file_utils::split_by_comma(ret, '\n');
-
-  if (v.empty()) {
-    return -1;
-  }
-  std::string resp = v[v.size() - 1];
-
-  return json_parse_neb_state(resp);
-}
-
-std::pair<std::string, int> json_parse_account_state(const std::string &json) {
+std::pair<std::string, int>
+nebulas_api::json_parse_account_state(const std::string &json) {
   boost::property_tree::ptree pt;
   std::stringstream ss(json);
 
@@ -53,8 +25,9 @@ std::pair<std::string, int> json_parse_account_state(const std::string &json) {
   return std::make_pair(balance, type);
 }
 
-std::pair<std::string, int> get_account_state(const std::string &address,
-                                              block_height_t height) {
+std::pair<std::string, int>
+nebulas_api::get_account_state(const std::string &address,
+                               block_height_t height) {
   std::string cmd =
       "curl -s -H 'Content-Type: application/json' -X POST "
       "http://localhost:8685/v1/user/accountstate -d '{\"height\": " +
@@ -76,7 +49,7 @@ std::pair<std::string, int> get_account_state(const std::string &address,
   return json_parse_account_state(resp);
 }
 
-int32_t is_contract_address(const std::string &address) {
+int32_t nebulas_api::is_contract_address(const std::string &address) {
   // int type = get_account_state(address, 0).second;
   // decode base58 instead of rpc calling
   std::vector<unsigned char> v;
@@ -115,9 +88,38 @@ int32_t is_contract_address(const std::string &address) {
   return v[1] == 0x57 ? 0 : 1;
 }
 
+block_height_t nebulas_api::json_parse_neb_state(const std::string &json) {
+  boost::property_tree::ptree pt;
+  std::stringstream ss(json);
+
+  try {
+    boost::property_tree::read_json(ss, pt);
+  } catch (boost::property_tree::ptree_error &e) {
+    return -1;
+  }
+
+  boost::property_tree::ptree result = pt.get_child("result");
+  std::string height = result.get<std::string>("height");
+  return std::stoi(height);
+}
+
+block_height_t nebulas_api::get_block_height() {
+  std::string cmd = "curl -s -H 'Content-Type: application/json' -X GET "
+                    "http://localhost:8685/v1/user/nebstate";
+  std::string ret = file_utils::get_stdout_from_command(cmd);
+  std::vector<std::string> v = file_utils::split_by_comma(ret, '\n');
+
+  if (v.empty()) {
+    return -1;
+  }
+  std::string resp = v[v.size() - 1];
+
+  return json_parse_neb_state(resp);
+}
+
 std::shared_ptr<std::vector<transaction_info_t>>
-json_parse_block_transactions(const std::string &json,
-                              const std::string &block_timestamp) {
+nebulas_api::json_parse_block_transactions(const std::string &json,
+                                           const std::string &block_timestamp) {
   boost::property_tree::ptree pt;
   std::stringstream ss(json);
   try {
@@ -179,8 +181,8 @@ json_parse_block_transactions(const std::string &json,
 }
 
 std::shared_ptr<std::vector<transaction_info_t>>
-get_block_transactions_by_height(block_height_t height,
-                                 const std::string &block_timestamp) {
+nebulas_api::get_block_transactions_by_height(
+    block_height_t height, const std::string &block_timestamp) {
   std::string cmd =
       "curl -s -H 'Content-Type: application/json' -X POST "
       "http://localhost:8685/v1/user/getBlockByHeight -d '{\"height\": " +
@@ -196,7 +198,7 @@ get_block_transactions_by_height(block_height_t height,
   return json_parse_block_transactions(resp, block_timestamp);
 }
 
-std::string json_parse_block_timestamp(const std::string &json) {
+std::string nebulas_api::json_parse_block_timestamp(const std::string &json) {
   boost::property_tree::ptree pt;
   std::stringstream ss(json);
   try {
@@ -216,7 +218,7 @@ std::string json_parse_block_timestamp(const std::string &json) {
   return timestamp;
 }
 
-std::string get_block_timestamp_by_height(block_height_t height) {
+std::string nebulas_api::get_block_timestamp_by_height(block_height_t height) {
   std::string cmd =
       "curl -s -H 'Content-Type: application/json' -X POST "
       "http://localhost:8685/v1/user/getBlockByHeight -d '{\"height\": " +
@@ -232,8 +234,8 @@ std::string get_block_timestamp_by_height(block_height_t height) {
   return json_parse_block_timestamp(resp);
 }
 
-std::shared_ptr<std::vector<event_t>> json_parse_events(const std::string &json,
-                                                        int32_t tx_status) {
+std::shared_ptr<std::vector<event_t>>
+nebulas_api::json_parse_events(const std::string &json, int32_t tx_status) {
   boost::property_tree::ptree pt;
   std::stringstream ss(json);
   try {
@@ -279,7 +281,7 @@ std::shared_ptr<std::vector<event_t>> json_parse_events(const std::string &json,
 }
 
 std::shared_ptr<std::vector<event_t>>
-get_events_by_hash(const std::string &hash, int32_t tx_status) {
+nebulas_api::get_events_by_hash(const std::string &hash, int32_t tx_status) {
   std::string cmd =
       "curl -s -H 'Content-Type: application/json' -X POST "
       "http://localhost:8685/v1/user/getEventsByHash -d '{\"hash\":\"" +
@@ -297,12 +299,13 @@ get_events_by_hash(const std::string &hash, int32_t tx_status) {
 }
 
 std::shared_ptr<std::vector<transaction_info_t>>
-get_transaction_events(const transaction_info_t &transaction,
-                       const std::string &block_timestamp, int32_t tx_status) {
+nebulas_api::get_transaction_events(const transaction_info_t &transaction,
+                                    const std::string &block_timestamp,
+                                    int32_t tx_status) {
   std::vector<transaction_info_t> transactions;
 
   std::string hash = transaction.template get<::neb::hash>();
-  auto it_events = neb::nebulas::get_events_by_hash(hash, tx_status);
+  auto it_events = get_events_by_hash(hash, tx_status);
   auto events = *it_events;
 
   int chainId = transaction.template get<::neb::chainId>();

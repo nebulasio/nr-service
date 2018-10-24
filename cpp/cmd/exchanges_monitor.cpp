@@ -46,7 +46,8 @@ int main(int argc, char *argv[]) {
         neb::block_height_t height =
             txs_in_start_last_minute.back().template get<::neb::height>();
         std::string balance =
-            neb::nebulas::get_account_state(it.second, height).first;
+            neb::nebulas::nebulas_api::get_account_state(it.second, height)
+                .first;
         file << date << ',' << std::stod(balance) / pow(10, 18) << '\n';
 
         LOG(INFO) << it.first << ',' << date << ',' << balance << ',' << height;
