@@ -12,7 +12,7 @@ nebulas_account_db::nebulas_account_db(const std::string &url,
                                        const std::string &dbname)
     : account_db<nebulas_db>(url, usrname, passwd, dbname) {}
 
-std::vector<std::pair<account_address_t, account_info_t>>
+std::shared_ptr<std::vector<std::pair<account_address_t, account_info_t>>>
 nebulas_account_db::sort_update_info_by_height(
     const std::unordered_map<account_address_t, account_info_t>
         &to_update_info) {
@@ -32,7 +32,9 @@ nebulas_account_db::sort_update_info_by_height(
   };
 
   sort(sorted_update_info.begin(), sorted_update_info.end(), cmp);
-  return sorted_update_info;
+  return std::make_shared<
+      std::vector<std::pair<account_address_t, account_info_t>>>(
+      sorted_update_info);
 }
 
 void nebulas_account_db::set_coinbase_account() {
@@ -103,12 +105,14 @@ void nebulas_account_db::append_account_to_db() {
   block_height_t ac_height = get_max_height_from_account();
   block_height_t tx_height = get_max_height_from_transaction();
 
-  std::vector<transaction_info_t> txs =
+  auto it_txs =
       m_tdb_ptr
           ->read_success_and_failed_transaction_from_db_with_block_duration(
               ac_height, tx_height);
+  auto txs = *it_txs;
 
-  std::vector<account_info_t> account_info_list = read_account_from_db();
+  auto it_account_info_list = read_account_from_db();
+  auto account_info_list = *it_account_info_list;
   std::unordered_map<account_address_t, account_info_t>
       address_and_account_info;
   for (auto it = account_info_list.begin(); it != account_info_list.end();
@@ -182,8 +186,8 @@ void nebulas_account_db::append_account_to_db() {
 
   LOG(INFO) << "to update size: " << to_update_info.size();
 
-  std::vector<std::pair<account_address_t, account_info_t>> sorted_update_info =
-      sort_update_info_by_height(to_update_info);
+  auto it_sorted_update_info = sort_update_info_by_height(to_update_info);
+  auto sorted_update_info = *it_sorted_update_info;
 
   int cnt = 1;
   for (auto it = sorted_update_info.begin(); it != sorted_update_info.end();

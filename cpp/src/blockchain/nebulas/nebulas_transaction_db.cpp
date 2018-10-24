@@ -228,8 +228,9 @@ void nebulas_transaction_db::append_transaction_to_graph() {
     if (block_timestamp.compare(std::string()) == 0) {
       return;
     }
-    std::vector<transaction_info_t> v =
+    auto it_v =
         ::neb::nebulas::get_block_transactions_by_height(h, block_timestamp);
+    auto v = *it_v;
 
     std::vector<transaction_info_t> rs;
     for (size_t i = 0; i < v.size(); ++i) {
@@ -237,9 +238,9 @@ void nebulas_transaction_db::append_transaction_to_graph() {
       rs.push_back(v[i]);
       int32_t tx_status = v[i].template get<::neb::status>();
 
-      std::vector<transaction_info_t> events =
-          ::neb::nebulas::get_transaction_events(v[i], block_timestamp,
-                                                 tx_status);
+      auto it_events = ::neb::nebulas::get_transaction_events(
+          v[i], block_timestamp, tx_status);
+      auto events = *it_events;
       for (auto it = events.begin(); it != events.end(); it++) {
         it->template set<::neb::tx_id>(++tx_id);
         rs.push_back(*it);

@@ -9,8 +9,8 @@ TEST(test_nebulas_account_db, test_append_account_to_db_full) {
                              std::getenv("NEBULAS_DB"));
   account_ptr_t account_db_ptr = std::make_shared<nebulas_account_db_t>(na_db);
 
-  std::vector<neb::account_info_t> rs =
-      account_db_ptr->read_account_from_db_sort_by_balance_desc();
+  auto it_rs = account_db_ptr->read_account_from_db_sort_by_balance_desc();
+  auto rs = *it_rs;
 
   auto it_begin = rs.begin();
   for (auto it = rs.begin(); it != rs.end(); it++) {

@@ -19,7 +19,7 @@ protected:
 
   void set_coinbase_account();
 
-  std::vector<std::pair<account_address_t, account_info_t>>
+  std::shared_ptr<std::vector<std::pair<account_address_t, account_info_t>>>
   sort_update_info_by_height(
       const std::unordered_map<account_address_t, account_info_t>
           &to_update_info);

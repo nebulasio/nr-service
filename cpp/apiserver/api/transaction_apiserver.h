@@ -170,10 +170,11 @@ private:
                                     neb::block_height_t height) {
 
     int32_t read_ahead_height = 3600 / 15;
-    std::vector<neb::transaction_info_t> txs =
+    auto it_txs =
         m_tx_ptr
             ->read_success_and_failed_transaction_from_db_with_block_duration(
                 height, height + read_ahead_height);
+    auto txs = *it_txs;
     LOG(INFO) << "read ahead transaction size: " << txs.size();
     std::unordered_map<neb::block_height_t,
                        std::vector<neb::transaction_info_t>>
@@ -199,9 +200,10 @@ private:
   void set_address_transaction_cache(address_transaction_cache_t &cache,
                                      const std::string &address) {
 
-    std::vector<neb::transaction_info_t> rs =
+    auto it_rs =
         m_tx_ptr->read_success_and_failed_transaction_from_db_with_address(
             address);
+    auto rs = *it_rs;
     LOG(INFO) << "read transaction by address, size: " << rs.size();
     cache.set(address,
               std::make_shared<std::vector<neb::transaction_info_t>>(rs));

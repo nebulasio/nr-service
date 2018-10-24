@@ -15,12 +15,12 @@ typedef neb::nebulas::nebulas_transaction_db nebulas_transaction_db_t;
 typedef neb::nebulas::nebulas_account_db nebulas_account_db_t;
 typedef neb::nebulas::statistics_db nebulas_statistics_db_t;
 
-std::vector<neb::transaction_info_t>
+std::shared_ptr<std::vector<neb::transaction_info_t>>
 transaction_list_with_duration(const transaction_db_ptr_t db_ptr,
                                const std::string &start_ts,
                                const std::string &end_ts) {
 
-  std::vector<neb::transaction_info_t> transactions =
+  auto transactions =
       db_ptr->read_success_and_failed_transaction_from_db_with_ts_duration(
           start_ts, end_ts);
 
@@ -30,9 +30,9 @@ transaction_list_with_duration(const transaction_db_ptr_t db_ptr,
 int32_t smart_contract_total_numbers(const account_db_ptr_t db_ptr,
                                      const std::string &end_ts) {
   int32_t ret = 0;
-  std::vector<neb::account_info_t> accounts =
-      db_ptr->read_account_from_db_with_create_ts_duration(std::to_string(0),
-                                                           end_ts);
+  auto it_accounts = db_ptr->read_account_from_db_with_create_ts_duration(
+      std::to_string(0), end_ts);
+  auto accounts = *it_accounts;
   for (auto it = accounts.begin(); it != accounts.end(); it++) {
     std::string type = it->template get<::neb::account_type>();
     if (type.compare("contract") == 0) {
@@ -51,8 +51,9 @@ active_addr_t active_account_or_contract_numbers_with_duration(
     const transaction_db_ptr_t db_ptr, const std::string &start_ts,
     const std::string &end_ts) {
 
-  std::vector<neb::transaction_info_t> transactions =
+  auto it_transactions =
       transaction_list_with_duration(db_ptr, start_ts, end_ts);
+  auto transactions = *it_transactions;
 
   std::unordered_set<std::string> s_account;
   std::unordered_set<std::string> s_contract;

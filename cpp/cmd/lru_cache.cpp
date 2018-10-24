@@ -35,9 +35,10 @@ void set_cache(neb::lru_cache<neb::block_height_t,
   nebulas_transaction_db_ptr_t tx_ptr =
       std::make_shared<nebulas_transaction_db_t>(tdb);
 
-  std::vector<neb::transaction_info_t> txs =
+  auto it_txs =
       tx_ptr->read_success_and_failed_transaction_from_db_with_block_duration(
           height, height);
+  auto txs = *it_txs;
   LOG(INFO) << "read ahead transaction size: " << txs.size();
   std::unordered_map<neb::block_height_t, std::vector<neb::transaction_info_t>>
       height_and_txs;

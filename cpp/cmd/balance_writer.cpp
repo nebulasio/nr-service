@@ -25,9 +25,10 @@ void write_date_balance(tdb_ptr_t tdb_ptr, adb_ptr_t adb_ptr, bdb_ptr_t bdb_ptr,
                         const std::string &date,
                         neb::block_height_t start_block,
                         neb::block_height_t end_block) {
-  auto account_inter_txs =
+  auto it_account_inter_txs =
       tdb_ptr->read_inter_transaction_from_db_with_duration(start_block,
                                                             end_block);
+  auto account_inter_txs = *it_account_inter_txs;
   LOG(INFO) << "account to account size: " << account_inter_txs.size();
   std::unordered_map<std::string, std::string> addr_and_type;
   for (auto &tx : account_inter_txs) {
@@ -64,10 +65,11 @@ void write_to_balance_db(tdb_ptr_t tdb_ptr, adb_ptr_t adb_ptr,
   time_t seconds_of_day = 24 * 60 * 60;
   time_t seconds_of_ten_minute = 10 * 60;
 
-  std::vector<neb::transaction_info_t> txs_in_end_last_minute =
+  auto it_txs_in_end_last_minute =
       tdb_ptr->read_success_and_failed_transaction_from_db_with_ts_duration(
           std::to_string(end_ts - seconds_of_ten_minute),
           std::to_string(end_ts));
+  auto txs_in_end_last_minute = *it_txs_in_end_last_minute;
   if (txs_in_end_last_minute.empty()) {
     LOG(INFO) << "no transactions in end timestamp of last minute";
     return;
@@ -76,10 +78,11 @@ void write_to_balance_db(tdb_ptr_t tdb_ptr, adb_ptr_t adb_ptr,
       txs_in_end_last_minute.back().template get<::neb::height>();
 
   time_t start_ts = end_ts - seconds_of_day;
-  std::vector<neb::transaction_info_t> txs_in_start_last_minute =
+  auto it_txs_in_start_last_minute =
       tdb_ptr->read_success_and_failed_transaction_from_db_with_ts_duration(
           std::to_string(start_ts - seconds_of_ten_minute),
           std::to_string(start_ts));
+  auto txs_in_start_last_minute = *it_txs_in_start_last_minute;
   if (txs_in_start_last_minute.empty()) {
     LOG(INFO) << "no transactions in start timestamp of last minute";
     return;

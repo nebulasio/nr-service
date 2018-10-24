@@ -13,10 +13,11 @@ eth_account_db::eth_account_db(const std::string &url,
 
 void eth_account_db::insert_account_to_db(block_height_t start_block,
                                           block_height_t end_block) {
-  std::vector<transaction_info_t> txs =
+  auto it_txs =
       m_tdb_ptr
           ->read_success_and_failed_transaction_from_db_with_block_duration(
               start_block, end_block);
+  auto txs = *it_txs;
   LOG(INFO) << "transaction size: " << txs.size();
 
   std::unordered_map<account_address_t, account_info_t> addr_and_info;
@@ -26,8 +27,8 @@ void eth_account_db::insert_account_to_db(block_height_t start_block,
   }
   LOG(INFO) << "to update size: " << addr_and_info.size();
 
-  std::vector<std::pair<account_address_t, account_info_t>> sorted_info =
-      sort_account_info_by_height(addr_and_info);
+  auto it_sorted_info = sort_account_info_by_height(addr_and_info);
+  auto sorted_info = *it_sorted_info;
 
   uint32_t cnt = 1;
   for (auto it = sorted_info.begin(); it != sorted_info.end(); it++) {
@@ -49,7 +50,7 @@ void eth_account_db::insert_account_to_db(block_height_t start_block,
   LOG(INFO) << "rows: " << cnt;
 }
 
-std::vector<std::pair<account_address_t, account_info_t>>
+std::shared_ptr<std::vector<std::pair<account_address_t, account_info_t>>>
 eth_account_db::sort_account_info_by_height(
     const std::unordered_map<account_address_t, account_info_t>
         &addr_and_account_info) {
@@ -70,7 +71,8 @@ eth_account_db::sort_account_info_by_height(
   };
 
   sort(sorted_info.begin(), sorted_info.end(), cmp);
-  return sorted_info;
+  return std::make_shared<
+      std::vector<std::pair<account_address_t, account_info_t>>>(sorted_info);
 }
 
 void eth_account_db::set_accounts(

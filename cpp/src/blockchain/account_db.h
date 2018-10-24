@@ -20,12 +20,13 @@ typedef typename account_table_t::row_type account_info_t;
 
 class account_db_interface {
 public:
-  virtual std::vector<account_info_t> read_account_from_db() = 0;
-  virtual std::vector<account_info_t>
+  virtual std::shared_ptr<std::vector<account_info_t>>
+  read_account_from_db() = 0;
+  virtual std::shared_ptr<std::vector<account_info_t>>
   read_account_from_db_sort_by_balance_desc() = 0;
-  virtual std::vector<account_info_t>
+  virtual std::shared_ptr<std::vector<account_info_t>>
   read_account_by_address(const std::string &address) = 0;
-  virtual std::vector<account_info_t>
+  virtual std::shared_ptr<std::vector<account_info_t>>
   read_account_from_db_with_create_ts_duration(const std::string &start_ts,
                                                const std::string &end_ts) = 0;
 
@@ -95,28 +96,29 @@ public:
         std::make_shared<transaction_db<DB>>(url, usrname, passwd, dbname);
   }
 
-  virtual std::vector<account_info_t> read_account_from_db() {
+  virtual std::shared_ptr<std::vector<account_info_t>> read_account_from_db() {
     const std::string aql = "for record in account return record";
     auto resp_ptr = this->aql_query(aql);
 
     std::vector<account_info_t> rs;
     base_db_t::parse_from_response(std::move(resp_ptr), rs);
-    return rs;
+    return std::make_shared<std::vector<account_info_t>>(rs);
   }
 
-  virtual std::vector<account_info_t>
+  virtual std::shared_ptr<std::vector<account_info_t>>
   read_account_from_db_sort_by_balance_desc() {
-    std::vector<account_info_t> rs = read_account_from_db();
+    auto it_rs = read_account_from_db();
+    auto rs = *it_rs;
     auto cmp = [&](const account_info_t &info1, const account_info_t &info2) {
       double b1 = std::stod(info1.template get<::neb::balance>());
       double b2 = std::stod(info2.template get<::neb::balance>());
       return b1 > b2;
     };
     sort(rs.begin(), rs.end(), cmp);
-    return rs;
+    return it_rs;
   }
 
-  virtual std::vector<account_info_t>
+  virtual std::shared_ptr<std::vector<account_info_t>>
   read_account_from_db_with_create_ts_duration(const std::string &start_ts,
                                                const std::string &end_ts) {
     const std::string aql = boost::str(
@@ -127,10 +129,10 @@ public:
 
     std::vector<account_info_t> rs;
     base_db_t::parse_from_response(std::move(resp_ptr), rs);
-    return rs;
+    return std::make_shared<std::vector<account_info_t>>(rs);
   }
 
-  virtual std::vector<account_info_t>
+  virtual std::shared_ptr<std::vector<account_info_t>>
   read_account_by_address(const std::string &address) {
     const std::string aql =
         boost::str(boost::format("for record in account filter "
@@ -140,7 +142,7 @@ public:
 
     std::vector<account_info_t> rs;
     base_db_t::parse_from_response(std::move(resp_ptr), rs);
-    return rs;
+    return std::make_shared<std::vector<account_info_t>>(rs);
   }
 
   virtual account_balance_t get_account_balance(block_height_t height,
@@ -181,10 +183,11 @@ public:
       int64_t start_block, int64_t end_block,
       std::unordered_map<account_address_t, account_balance_t> &addr_balance) {
     LOG(INFO) << "template account_db, init height address value begin";
-    std::vector<transaction_info_t> txs =
+    auto it_txs =
         m_tdb_ptr
             ->read_success_and_failed_transaction_from_db_with_block_duration(
                 start_block, end_block);
+    std::vector<transaction_info_t> txs = *it_txs;
     LOG(INFO) << "template account_db, read transaction done";
 
     for (auto it = txs.begin(); it != txs.end(); it++) {

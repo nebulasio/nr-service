@@ -70,7 +70,8 @@ public:
 
 private:
   void set_nr_cache(nr_cache_t &cache, const std::string &date) {
-    std::vector<neb::nr_info_t> rs = m_nr_ptr->read_nr_by_date(date);
+    auto it_rs = m_nr_ptr->read_nr_by_date(date);
+    auto rs = *it_rs;
     LOG(INFO) << "read nr by date, size: " << rs.size();
     cache.set(date, std::make_shared<std::vector<neb::nr_info_t>>(rs));
     return;

@@ -105,9 +105,11 @@ void eth_transaction_db::insert_transactions_to_db(block_height_t start_block,
 
     LOG(INFO) << h;
 
-    auto txs = get_block_transactions_by_height(h);
+    auto it_txs = get_block_transactions_by_height(h);
+    auto txs = *it_txs;
     LOG(INFO) << "get block transactions by height done, size: " << txs.size();
-    auto internal_txs = trace_block(h);
+    auto it_internal_txs = trace_block(h);
+    auto internal_txs = *it_internal_txs;
     LOG(INFO) << "trace block done, size: " << internal_txs.size();
 
     set_transactions(txs, internal_txs);

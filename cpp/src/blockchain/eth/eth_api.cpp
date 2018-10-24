@@ -119,7 +119,7 @@ block_height_t get_block_height() {
   return json_parse_eth_block_number(resp);
 }
 
-std::vector<transaction_info_t>
+std::shared_ptr<std::vector<transaction_info_t>>
 json_parse_eth_block_transactions(const std::string &json) {
   boost::property_tree::ptree pt;
   std::stringstream ss(json);
@@ -153,10 +153,10 @@ json_parse_eth_block_transactions(const std::string &json) {
     info.template set<::neb::timestamp>(timestamp);
     tx_v.push_back(info);
   }
-  return tx_v;
+  return std::make_shared<std::vector<transaction_info_t>>(tx_v);
 }
 
-std::vector<transaction_info_t>
+std::shared_ptr<std::vector<transaction_info_t>>
 get_block_transactions_by_height(block_height_t height) {
   std::string cmd = boost::str(
       boost::format("curl -s --data "
@@ -255,7 +255,7 @@ transaction_info_t parse_by_action_type(const boost::property_tree::ptree &pt) {
   return info;
 }
 
-std::vector<transaction_info_t>
+std::shared_ptr<std::vector<transaction_info_t>>
 json_parse_trace_block(const std::string &json) {
   boost::property_tree::ptree pt;
   std::stringstream ss(json);
@@ -272,10 +272,11 @@ json_parse_trace_block(const std::string &json) {
     boost::property_tree::ptree tx = v.second;
     tx_v.push_back(parse_by_action_type(tx));
   }
-  return tx_v;
+  return std::make_shared<std::vector<transaction_info_t>>(tx_v);
 }
 
-std::vector<transaction_info_t> trace_block(block_height_t height) {
+std::shared_ptr<std::vector<transaction_info_t>>
+trace_block(block_height_t height) {
   std::string cmd = boost::str(
       boost::format("curl -s --data "
                     "'{\"method\":\"trace_block\",\"params\":[\"%1%\"],\"id\":"

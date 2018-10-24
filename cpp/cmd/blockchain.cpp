@@ -41,9 +41,10 @@ void transaction_reader(const nebulas_transaction_db_ptr_t ptr,
                         neb::block_height_t end_block) {
   // std::vector<neb::transaction_info_t> txs =
   // ptr->read_transaction_simplified_from_db_with_duration(320010, 320020);
-  std::vector<neb::transaction_info_t> txs =
+  auto it_txs =
       ptr->read_success_and_failed_transaction_from_db_with_block_duration(
           start_block, end_block);
+  auto txs = *it_txs;
   for (auto it = txs.begin(); it != txs.end(); it++) {
     int32_t status = it->template get<::neb::status>();
     std::string from = it->template get<::neb::from>();
@@ -77,9 +78,10 @@ void ts_transaction_reader(const nebulas_transaction_db_ptr_t ptr,
                            const std::string &end_ts) {
   // std::vector<neb::transaction_info_t> txs =
   // ptr->read_transaction_simplified_from_db_with_duration(320010, 320020);
-  std::vector<neb::transaction_info_t> txs =
+  auto it_txs =
       ptr->read_success_and_failed_transaction_from_db_with_ts_duration(
           start_ts, end_ts);
+  auto txs = *it_txs;
   for (auto it = txs.begin(); it != txs.end(); it++) {
     int32_t status = it->template get<::neb::status>();
     std::string from = it->template get<::neb::from>();

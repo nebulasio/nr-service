@@ -20,7 +20,7 @@ protected:
       const transaction_info_t &info,
       std::unordered_map<account_address_t, account_info_t> &addr_and_info);
 
-  std::vector<std::pair<account_address_t, account_info_t>>
+  std::shared_ptr<std::vector<std::pair<account_address_t, account_info_t>>>
   sort_account_info_by_height(
       const std::unordered_map<account_address_t, account_info_t>
           &addr_and_account_info);

@@ -37,14 +37,15 @@ void nebulas_rank_detail(const tdb_ptr_t tdb_ptr, const adb_ptr_t adb_ptr,
   neb::nebulas_rank nr(tdb_ptr, adb_ptr, rp, start_block, end_block);
 
   // account inter transactions
-  std::vector<neb::transaction_info_t> account_inter_txs =
+  auto it_account_inter_txs =
       tdb_ptr->read_inter_transaction_from_db_with_duration(start_block,
                                                             end_block);
+  auto account_inter_txs = *it_account_inter_txs;
   LOG(INFO) << "account to account: " << account_inter_txs.size();
 
   // graph
-  std::vector<std::vector<neb::transaction_info_t>> txs_v =
-      nr.split_transactions_by_x_block_interval(account_inter_txs);
+  auto it_txs_v = nr.split_transactions_by_x_block_interval(account_inter_txs);
+  auto txs_v = *it_txs_v;
   nr.filter_empty_transactions_this_interval(txs_v);
   std::vector<neb::transaction_graph_ptr> tgs =
       nr.build_transaction_graphs(txs_v);
@@ -64,13 +65,14 @@ void nebulas_rank_detail(const tdb_ptr_t tdb_ptr, const adb_ptr_t adb_ptr,
   LOG(INFO) << "done with merge graphs.";
 
   // median
-  std::unordered_set<std::string> accounts =
-      nr.get_normal_accounts(account_inter_txs);
+  auto it_accounts = nr.get_normal_accounts(account_inter_txs);
+  auto accounts = *it_accounts;
   LOG(INFO) << "account size: " << accounts.size();
 
   std::unordered_map<neb::account_address_t, neb::account_balance_t>
       addr_balance;
-  auto date_balance = bdb_ptr->read_balance_by_date(date);
+  auto it_date_balance = bdb_ptr->read_balance_by_date(date);
+  auto date_balance = *it_date_balance;
   LOG(INFO) << "for date " << date << ", size: " << date_balance.size();
   for (auto &it : date_balance) {
     std::string address = it.template get<::neb::address>();
@@ -78,8 +80,9 @@ void nebulas_rank_detail(const tdb_ptr_t tdb_ptr, const adb_ptr_t adb_ptr,
     addr_balance.insert(std::make_pair(
         address, boost::lexical_cast<neb::account_balance_t>(balance)));
   }
-  std::unordered_map<std::string, double> account_median =
+  auto it_account_median =
       nr.get_account_balance_median(accounts, txs_v, adb_ptr, addr_balance);
+  auto account_median = *it_account_median;
 
   // degree and in_out amount
   std::unordered_map<std::string, neb::in_out_degree> in_out_degrees =
@@ -92,10 +95,11 @@ void nebulas_rank_detail(const tdb_ptr_t tdb_ptr, const adb_ptr_t adb_ptr,
       neb::get_stakes(tg->internal_graph());
 
   // weight and rank
-  std::unordered_map<std::string, double> account_weight =
-      nr.get_account_weight(in_out_vals, adb_ptr);
-  std::unordered_map<std::string, double> account_rank =
+  auto it_account_weight = nr.get_account_weight(in_out_vals, adb_ptr);
+  auto account_weight = *it_account_weight;
+  auto it_account_rank =
       nr.get_account_rank(account_median, account_weight, rp);
+  auto account_rank = *it_account_rank;
   LOG(INFO) << "account rank size: " << account_rank.size();
 
   // std::cout
@@ -148,10 +152,11 @@ void write_to_nebulas_rank_db(const tdb_ptr_t tdb_ptr, const adb_ptr_t adb_ptr,
   time_t seconds_of_day = 24 * 60 * 60;
   time_t seconds_of_ten_minute = 10 * 60;
 
-  std::vector<neb::transaction_info_t> txs_in_end_last_minute =
+  auto it_txs_in_end_last_minute =
       tdb_ptr->read_success_and_failed_transaction_from_db_with_ts_duration(
           std::to_string(end_ts - seconds_of_ten_minute),
           std::to_string(end_ts));
+  auto txs_in_end_last_minute = *it_txs_in_end_last_minute;
   if (txs_in_end_last_minute.empty()) {
     LOG(INFO) << "no transactions in end timestamp of last minute";
     return;
@@ -160,10 +165,11 @@ void write_to_nebulas_rank_db(const tdb_ptr_t tdb_ptr, const adb_ptr_t adb_ptr,
       txs_in_end_last_minute.back().template get<::neb::height>();
 
   time_t start_ts = end_ts - seconds_of_day;
-  std::vector<neb::transaction_info_t> txs_in_start_last_minute =
+  auto it_txs_in_start_last_minute =
       tdb_ptr->read_success_and_failed_transaction_from_db_with_ts_duration(
           std::to_string(start_ts - seconds_of_ten_minute),
           std::to_string(start_ts));
+  auto txs_in_start_last_minute = *it_txs_in_start_last_minute;
   if (txs_in_start_last_minute.empty()) {
     LOG(INFO) << "no transactions in start timestamp of last minute";
     return;

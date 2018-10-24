@@ -115,7 +115,7 @@ int32_t is_contract_address(const std::string &address) {
   return v[1] == 0x57 ? 0 : 1;
 }
 
-std::vector<transaction_info_t>
+std::shared_ptr<std::vector<transaction_info_t>>
 json_parse_block_transactions(const std::string &json,
                               const std::string &block_timestamp) {
   boost::property_tree::ptree pt;
@@ -123,14 +123,14 @@ json_parse_block_transactions(const std::string &json,
   try {
     boost::property_tree::read_json(ss, pt);
   } catch (boost::property_tree::ptree_error &e) {
-    return std::vector<transaction_info_t>();
+    return std::make_shared<std::vector<transaction_info_t>>();
   }
 
   boost::property_tree::ptree result = pt.get_child("result");
   bool is_finality = result.get<bool>("is_finality");
   // check finality
   if (!is_finality) {
-    return std::vector<transaction_info_t>();
+    return std::make_shared<std::vector<transaction_info_t>>();
   }
 
   block_height_t height = result.get<block_height_t>("height");
@@ -175,10 +175,10 @@ json_parse_block_transactions(const std::string &json,
                                       gas_limit, height, type_from, type_to);
     tx_v.push_back(info);
   }
-  return tx_v;
+  return std::make_shared<std::vector<transaction_info_t>>(tx_v);
 }
 
-std::vector<transaction_info_t>
+std::shared_ptr<std::vector<transaction_info_t>>
 get_block_transactions_by_height(block_height_t height,
                                  const std::string &block_timestamp) {
   std::string cmd =
@@ -189,7 +189,7 @@ get_block_transactions_by_height(block_height_t height,
   std::vector<std::string> v = file_utils::split_by_comma(ret, '\n');
 
   if (v.empty()) {
-    return std::vector<transaction_info_t>();
+    return std::make_shared<std::vector<transaction_info_t>>();
   }
   std::string resp = v[v.size() - 1];
 
@@ -232,14 +232,14 @@ std::string get_block_timestamp_by_height(block_height_t height) {
   return json_parse_block_timestamp(resp);
 }
 
-std::vector<event_t> json_parse_events(const std::string &json,
-                                       int32_t tx_status) {
+std::shared_ptr<std::vector<event_t>> json_parse_events(const std::string &json,
+                                                        int32_t tx_status) {
   boost::property_tree::ptree pt;
   std::stringstream ss(json);
   try {
     boost::property_tree::read_json(ss, pt);
   } catch (boost::property_tree::ptree_error &e) {
-    return std::vector<event_t>();
+    return std::make_shared<std::vector<event_t>>();
   }
 
   boost::property_tree::ptree result = pt.get_child("result");
@@ -258,7 +258,7 @@ std::vector<event_t> json_parse_events(const std::string &json,
     try {
       boost::property_tree::read_json(ss, pt);
     } catch (boost::property_tree::ptree_error &e) {
-      return std::vector<event_t>();
+      return std::make_shared<std::vector<event_t>>();
     }
 
     boost::property_tree::ptree::const_assoc_iterator it = pt.find("status");
@@ -275,11 +275,11 @@ std::vector<event_t> json_parse_events(const std::string &json,
     // std::cout << from << ", " << to << ", " << amount << std::endl;
   }
 
-  return ev_v;
+  return std::make_shared<std::vector<event_t>>(ev_v);
 }
 
-std::vector<event_t> get_events_by_hash(const std::string &hash,
-                                        int32_t tx_status) {
+std::shared_ptr<std::vector<event_t>>
+get_events_by_hash(const std::string &hash, int32_t tx_status) {
   std::string cmd =
       "curl -s -H 'Content-Type: application/json' -X POST "
       "http://localhost:8685/v1/user/getEventsByHash -d '{\"hash\":\"" +
@@ -288,7 +288,7 @@ std::vector<event_t> get_events_by_hash(const std::string &hash,
   std::vector<std::string> v = file_utils::split_by_comma(ret, '\n');
 
   if (v.empty()) {
-    return std::vector<event_t>();
+    return std::make_shared<std::vector<event_t>>();
   }
   std::string resp = v[v.size() - 1];
   // std::cout << resp << std::endl;
@@ -296,14 +296,14 @@ std::vector<event_t> get_events_by_hash(const std::string &hash,
   return json_parse_events(resp, tx_status);
 }
 
-std::vector<transaction_info_t>
+std::shared_ptr<std::vector<transaction_info_t>>
 get_transaction_events(const transaction_info_t &transaction,
                        const std::string &block_timestamp, int32_t tx_status) {
   std::vector<transaction_info_t> transactions;
 
   std::string hash = transaction.template get<::neb::hash>();
-  std::vector<event_t> events =
-      neb::nebulas::get_events_by_hash(hash, tx_status);
+  auto it_events = neb::nebulas::get_events_by_hash(hash, tx_status);
+  auto events = *it_events;
 
   int chainId = transaction.template get<::neb::chainId>();
   std::string timestamp = block_timestamp;
@@ -333,7 +333,7 @@ get_transaction_events(const transaction_info_t &transaction,
         type_from, type_to, gas_used);
     transactions.push_back(info);
   }
-  return transactions;
+  return std::make_shared<std::vector<transaction_info_t>>(transactions);
 }
 
 } // namespace nebulas

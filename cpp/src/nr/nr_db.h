@@ -24,7 +24,8 @@ typedef typename nr_table_t::row_type nr_info_t;
 class nr_db_interface {
 public:
   virtual void insert_date_nrs(const std::vector<nr_info_t> &infos) = 0;
-  virtual std::vector<nr_info_t> read_nr_by_date(const std::string &date) = 0;
+  virtual std::shared_ptr<std::vector<nr_info_t>>
+  read_nr_by_date(const std::string &date) = 0;
   virtual std::string nr_infos_to_string(const std::vector<nr_info_t> &rs) = 0;
 };
 
@@ -125,7 +126,8 @@ public:
     this->m_connection_ptr->sendRequest(std::move(request));
   }
 
-  virtual std::vector<nr_info_t> read_nr_by_date(const std::string &date) {
+  virtual std::shared_ptr<std::vector<nr_info_t>>
+  read_nr_by_date(const std::string &date) {
     const std::string aql = boost::str(
         boost::format("for item in nr filter item.date=='%1%' return item") %
         date);
@@ -133,7 +135,7 @@ public:
 
     std::vector<nr_info_t> rs;
     base_db_t::parse_from_response(std::move(resp_ptr), rs);
-    return rs;
+    return std::make_shared<std::vector<nr_info_t>>(rs);
   }
 
   virtual std::string nr_infos_to_string(const std::vector<nr_info_t> &rs) {

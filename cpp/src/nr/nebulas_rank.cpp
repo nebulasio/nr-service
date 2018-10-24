@@ -11,14 +11,14 @@ nebulas_rank::nebulas_rank(const transaction_db_ptr_t tdb_ptr,
       m_start_block(start_block), m_end_block(end_block) {
 }
 
-std::vector<std::vector<transaction_info_t>>
+std::shared_ptr<std::vector<std::vector<transaction_info_t>>>
 nebulas_rank::split_transactions_by_x_block_interval(
     const std::vector<transaction_info_t> &txs, int32_t block_interval) {
 
   std::vector<std::vector<transaction_info_t>> ret;
 
   if (block_interval < 1 || txs.empty()) {
-    return ret;
+    return std::make_shared<std::vector<std::vector<transaction_info_t>>>(ret);
   }
 
   auto it = txs.begin();
@@ -44,7 +44,7 @@ nebulas_rank::split_transactions_by_x_block_interval(
       break;
     }
   }
-  return ret;
+  return std::make_shared<std::vector<std::vector<transaction_info_t>>>(ret);
 }
 
 void nebulas_rank::filter_empty_transactions_this_interval(
@@ -93,7 +93,7 @@ block_height_t nebulas_rank::get_max_height_this_block_interval(
   return 0;
 }
 
-std::unordered_set<std::string>
+std::shared_ptr<std::unordered_set<std::string>>
 nebulas_rank::get_normal_accounts(const std::vector<transaction_info_t> &txs) {
 
   std::unordered_set<std::string> ret;
@@ -105,10 +105,10 @@ nebulas_rank::get_normal_accounts(const std::vector<transaction_info_t> &txs) {
     std::string to = it->template get<::neb::to>();
     ret.insert(to);
   }
-  return ret;
+  return std::make_shared<std::unordered_set<std::string>>(ret);
 }
 
-std::unordered_map<std::string, double>
+std::shared_ptr<std::unordered_map<std::string, double>>
 nebulas_rank::get_account_balance_median(
     const std::unordered_set<std::string> &accounts,
     const std::vector<std::vector<transaction_info_t>> &txs,
@@ -148,7 +148,7 @@ nebulas_rank::get_account_balance_median(
     ret.insert(std::make_pair(it->first, fmax(0.0, normalized_median)));
   }
 
-  return ret;
+  return std::make_shared<std::unordered_map<std::string, double>>(ret);
 }
 
 double nebulas_rank::f_account_weight(double in_val, double out_val) {
@@ -157,7 +157,8 @@ double nebulas_rank::f_account_weight(double in_val, double out_val) {
   return (in_val + out_val) * exp((-2) * pow(sin(pi / 4.0 - atan_val), 2.0));
 }
 
-std::unordered_map<std::string, double> nebulas_rank::get_account_weight(
+std::shared_ptr<std::unordered_map<std::string, double>>
+nebulas_rank::get_account_weight(
     const std::unordered_map<std::string, in_out_val> &in_out_vals,
     const account_db_ptr_t db_ptr) {
 
@@ -172,7 +173,7 @@ std::unordered_map<std::string, double> nebulas_rank::get_account_weight(
     ret.insert(std::make_pair(
         it->first, f_account_weight(normalized_in_val, normalized_out_val)));
   }
-  return ret;
+  return std::make_shared<std::unordered_map<std::string, double>>(ret);
 }
 
 double nebulas_rank::f_account_rank(double a, double b, double c, double d,
@@ -181,7 +182,8 @@ double nebulas_rank::f_account_rank(double a, double b, double c, double d,
   return pow(S * a / (S + b), mu) * pow(R * c / (R + d), lambda);
 }
 
-std::unordered_map<std::string, double> nebulas_rank::get_account_rank(
+std::shared_ptr<std::unordered_map<std::string, double>>
+nebulas_rank::get_account_rank(
     const std::unordered_map<std::string, double> &account_median,
     const std::unordered_map<std::string, double> &account_weight,
     const rank_params_t &rp) {
@@ -197,28 +199,28 @@ std::unordered_map<std::string, double> nebulas_rank::get_account_rank(
       ret.insert(std::make_pair(it_m->first, rank_val));
     }
   }
-  return ret;
+  return std::make_shared<std::unordered_map<std::string, double>>(ret);
 }
 
-std::unordered_map<std::string, double>
+std::shared_ptr<std::unordered_map<std::string, double>>
 nebulas_rank::get_account_score_service() {
 
   LOG(INFO) << "in func get_account_score_service";
 
-  std::vector<transaction_info_t> ret =
-      m_tdb_ptr->read_inter_transaction_from_db_with_duration(m_start_block,
-                                                              m_end_block);
+  auto it_ret = m_tdb_ptr->read_inter_transaction_from_db_with_duration(
+      m_start_block, m_end_block);
+  auto ret = *it_ret;
   LOG(INFO) << "account to account: " << ret.size();
 
-  std::vector<std::vector<transaction_info_t>> txs =
-      split_transactions_by_x_block_interval(ret);
+  auto it_txs = split_transactions_by_x_block_interval(ret);
+  auto txs = *it_txs;
   LOG(INFO) << "split transactions into " << txs.size() << " size.";
   filter_empty_transactions_this_interval(txs);
 
   std::vector<transaction_graph_ptr> tgs = build_transaction_graphs(txs);
   if (tgs.empty()) {
     LOG(INFO) << "empty transaction graph";
-    return std::unordered_map<std::string, double>();
+    return std::make_shared<std::unordered_map<std::string, double>>();
   }
   LOG(INFO) << "we have " << tgs.size() << " subgraphs.";
 
@@ -233,11 +235,13 @@ nebulas_rank::get_account_score_service() {
   merge_topk_edges_with_same_from_and_same_to(tg->internal_graph());
   LOG(INFO) << "done with merge graphs.";
 
-  std::unordered_set<std::string> accounts = get_normal_accounts(ret);
+  auto it_accounts = get_normal_accounts(ret);
+  auto accounts = *it_accounts;
   std::unordered_map<neb::account_address_t, neb::account_balance_t>
       addr_balance;
-  std::unordered_map<std::string, double> median =
+  auto it_median =
       get_account_balance_median(accounts, txs, m_adb_ptr, addr_balance);
+  auto median = *it_median;
   // for (auto it = median.begin(); it != median.end(); it++) {
   //   // LOG(INFO) << it->first << ", " << it->second;
   //   std::cout << it->first << "," << it->second << std::endl;
@@ -246,8 +250,8 @@ nebulas_rank::get_account_score_service() {
 
   std::unordered_map<std::string, in_out_val> in_out_vals =
       get_in_out_vals(tg->internal_graph());
-  std::unordered_map<std::string, double> account_weight =
-      get_account_weight(in_out_vals, m_adb_ptr);
+  auto it_account_weight = get_account_weight(in_out_vals, m_adb_ptr);
+  auto account_weight = *it_account_weight;
 
   return get_account_rank(median, account_weight, m_rp);
 }

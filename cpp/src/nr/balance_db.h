@@ -12,7 +12,7 @@ class balance_db_interface {
 public:
   virtual void
   insert_date_balances(const std::vector<balance_info_t> &infos) = 0;
-  virtual std::vector<balance_info_t>
+  virtual std::shared_ptr<std::vector<balance_info_t>>
   read_balance_by_date(const std::string &date) = 0;
 };
 
@@ -80,7 +80,7 @@ public:
     this->m_connection_ptr->sendRequest(std::move(request));
   }
 
-  virtual std::vector<balance_info_t>
+  virtual std::shared_ptr<std::vector<balance_info_t>>
   read_balance_by_date(const std::string &date) {
     const std::string aql = boost::str(
         boost::format(
@@ -90,7 +90,7 @@ public:
 
     std::vector<balance_info_t> rs;
     base_db_t::parse_from_response(std::move(resp_ptr), rs);
-    return rs;
+    return std::make_shared<std::vector<balance_info_t>>(rs);
   }
 
 private:

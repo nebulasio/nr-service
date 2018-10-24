@@ -78,8 +78,8 @@ public:
 
 protected:
   void set_account_cache(account_cache_t &cache, const std::string &address) {
-    std::vector<neb::account_info_t> rs =
-        m_ac_ptr->read_account_by_address(address);
+    auto it_rs = m_ac_ptr->read_account_by_address(address);
+    auto rs = *it_rs;
     LOG(INFO) << "read account by address, size: " << rs.size();
     for (auto it = rs.begin(); it != rs.end(); it++) {
       std::string address = it->template get<::neb::address>();
