@@ -226,13 +226,13 @@ nebulas_rank::get_account_score_service() {
 
   for (auto it = tgs.begin(); it != tgs.end(); it++) {
     transaction_graph_ptr ptr = *it;
-    remove_cycles_based_on_time_sequence(ptr->internal_graph());
-    merge_edges_with_same_from_and_same_to(ptr->internal_graph());
+    graph_algo::remove_cycles_based_on_time_sequence(ptr->internal_graph());
+    graph_algo::merge_edges_with_same_from_and_same_to(ptr->internal_graph());
   }
   LOG(INFO) << "done with remove cycle.";
 
-  transaction_graph_ptr tg = merge_graphs(tgs);
-  merge_topk_edges_with_same_from_and_same_to(tg->internal_graph());
+  transaction_graph_ptr tg = graph_algo::merge_graphs(tgs);
+  graph_algo::merge_topk_edges_with_same_from_and_same_to(tg->internal_graph());
   LOG(INFO) << "done with merge graphs.";
 
   auto it_accounts = get_normal_accounts(ret);
@@ -248,8 +248,8 @@ nebulas_rank::get_account_score_service() {
   // }
   LOG(INFO) << "median size: " << median.size();
 
-  std::unordered_map<std::string, in_out_val> in_out_vals =
-      get_in_out_vals(tg->internal_graph());
+  auto it_in_out_vals = graph_algo::get_in_out_vals(tg->internal_graph());
+  auto in_out_vals = *it_in_out_vals;
   auto it_account_weight = get_account_weight(in_out_vals, m_adb_ptr);
   auto account_weight = *it_account_weight;
 

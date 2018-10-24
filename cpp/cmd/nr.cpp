@@ -141,13 +141,16 @@ void write_date_nr(const tdb_ptr_t tdb_ptr, const adb_ptr_t adb_ptr,
   LOG(INFO) << "we have " << tgs.size() << " subgraphs.";
   for (auto it = tgs.begin(); it != tgs.end(); it++) {
     neb::transaction_graph_ptr ptr = *it;
-    neb::remove_cycles_based_on_time_sequence(ptr->internal_graph());
-    neb::merge_edges_with_same_from_and_same_to(ptr->internal_graph());
+    neb::graph_algo::remove_cycles_based_on_time_sequence(
+        ptr->internal_graph());
+    neb::graph_algo::merge_edges_with_same_from_and_same_to(
+        ptr->internal_graph());
   }
   LOG(INFO) << "done with remove cycle.";
 
-  neb::transaction_graph_ptr tg = neb::merge_graphs(tgs);
-  neb::merge_topk_edges_with_same_from_and_same_to(tg->internal_graph());
+  neb::transaction_graph_ptr tg = neb::graph_algo::merge_graphs(tgs);
+  neb::graph_algo::merge_topk_edges_with_same_from_and_same_to(
+      tg->internal_graph());
   LOG(INFO) << "done with merge graphs.";
 
   // median
@@ -171,14 +174,15 @@ void write_date_nr(const tdb_ptr_t tdb_ptr, const adb_ptr_t adb_ptr,
   auto account_median = *it_account_median;
 
   // degree and in_out amount
-  std::unordered_map<std::string, neb::in_out_degree> in_out_degrees =
-      neb::get_in_out_degrees(tg->internal_graph());
-  std::unordered_map<std::string, int> degrees =
-      neb::get_degree_sum(tg->internal_graph());
-  std::unordered_map<std::string, neb::in_out_val> in_out_vals =
-      neb::get_in_out_vals(tg->internal_graph());
-  std::unordered_map<std::string, double> stakes =
-      neb::get_stakes(tg->internal_graph());
+  auto it_in_out_degrees =
+      neb::graph_algo::get_in_out_degrees(tg->internal_graph());
+  auto in_out_degrees = *it_in_out_degrees;
+  auto it_degrees = neb::graph_algo::get_degree_sum(tg->internal_graph());
+  auto degrees = *it_degrees;
+  auto it_in_out_vals = neb::graph_algo::get_in_out_vals(tg->internal_graph());
+  auto in_out_vals = *it_in_out_vals;
+  auto it_stakes = neb::graph_algo::get_stakes(tg->internal_graph());
+  auto stakes = *it_stakes;
 
   // weight and rank
   auto it_account_weight = nr.get_account_weight(in_out_vals, adb_ptr);
