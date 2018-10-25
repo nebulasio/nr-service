@@ -91,7 +91,7 @@ $ python python/arango/arango_graph.py
 $ ./cpp/bin/transaction_writer
 ```
 
- Running `transaction_writer` in directory `$PATH_TO_NR-SERVICE/cpp/bin` will build transaction graph to arangodb colelctions from nebulas node (genesis block to the latest), also takes days or week.
+ Running `transaction_writer` in directory `$PATH_TO_NR-SERVICE/cpp/bin` will build transaction graph to arangodb collections from nebulas node (genesis block to the latest), also takes days or week.
  
  ### Build nr db collection
  
