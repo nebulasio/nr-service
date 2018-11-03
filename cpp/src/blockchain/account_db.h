@@ -56,8 +56,8 @@ template <> struct account_db_traits<nebulas_db> {
 template <> struct account_db_traits<eth_db> {
   static std::string get_address_balance(const std::string &address,
                                          const std::string &height) {
-    return ::neb::eth::eth_api::get_address_balance(
-        address, string_utils::to_hex(height));
+    return string_utils::to_dec(::neb::eth::eth_api::get_address_balance(
+        address, string_utils::to_hex(height)));
   }
 };
 } // namespace internal
