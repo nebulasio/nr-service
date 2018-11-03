@@ -5,6 +5,7 @@
 DEFINE_string(chain, "nebulas", "chain name, nebulas or eth");
 DEFINE_int32(start_ts, 0, "the first day end timestamp");
 DEFINE_int32(end_ts, 1, "the last day end timestamp");
+DEFINE_int32(parallel, 1, "parallel thread numbers");
 
 typedef neb::transaction_db_interface transaction_db_t;
 typedef std::shared_ptr<transaction_db_t> tdb_ptr_t;
@@ -21,10 +22,59 @@ typedef neb::transaction_db<neb::eth_db> eth_transaction_db_t;
 typedef neb::account_db<neb::eth_db> eth_account_db_t;
 typedef neb::balance_db<neb::eth_db> eth_balance_db_t;
 
+void divide_address_set(
+    const std::unordered_map<std::string, std::string> &addr_and_type,
+    size_t parallel,
+    std::vector<std::unordered_map<std::string, std::string>> &addr_type_list) {
+
+  size_t interval = addr_and_type.size() / parallel;
+  std::unordered_map<std::string, std::string> tmp;
+
+  for (auto &addr : addr_and_type) {
+    tmp.insert(std::make_pair(addr.first, addr.second));
+    if (tmp.size() == interval) {
+      addr_type_list.push_back(tmp);
+      tmp.clear();
+    }
+  }
+  if (!addr_type_list.empty()) {
+    auto &last = addr_type_list.back();
+    for (auto &it_tmp : tmp) {
+      last.insert(std::make_pair(it_tmp.first, it_tmp.second));
+    }
+  }
+}
+
+void get_address_parallel(
+    const std::vector<std::unordered_map<std::string, std::string>>
+        &addr_type_list,
+    adb_ptr_t adb_ptr, neb::block_height_t block_height,
+    std::unordered_map<std::string, std::string> &addr_and_balance) {
+
+  std::vector<std::thread> tv;
+  std::mutex lock;
+
+  for (size_t i = 0; i < addr_type_list.size(); i++) {
+    std::thread t([&, i]() {
+      for (auto &addr : addr_type_list[i]) {
+        std::string balance = adb_ptr->get_address_balance(
+            addr.first, std::to_string(block_height));
+        std::lock_guard<std::mutex> lg(lock);
+        addr_and_balance.insert(std::make_pair(addr.first, balance));
+      }
+    });
+    tv.push_back(std::move(t));
+  }
+
+  for (auto &t : tv) {
+    t.join();
+  }
+}
+
 void write_date_balance(tdb_ptr_t tdb_ptr, adb_ptr_t adb_ptr, bdb_ptr_t bdb_ptr,
                         const std::string &date,
                         neb::block_height_t start_block,
-                        neb::block_height_t end_block) {
+                        neb::block_height_t end_block, size_t parallel) {
   auto it_account_inter_txs =
       tdb_ptr->read_inter_transaction_from_db_with_duration(start_block,
                                                             end_block);
@@ -42,25 +92,32 @@ void write_date_balance(tdb_ptr_t tdb_ptr, adb_ptr_t adb_ptr, bdb_ptr_t bdb_ptr,
   }
   LOG(INFO) << "account set size: " << addr_and_type.size();
 
+  std::vector<std::unordered_map<std::string, std::string>> addr_type_list;
+  divide_address_set(addr_and_type, parallel, addr_type_list);
+  assert(parallel == addr_type_list.size());
+
+  std::unordered_map<std::string, std::string> addr_and_balance;
+  get_address_parallel(addr_type_list, adb_ptr, start_block, addr_and_balance);
+
   std::vector<neb::balance_info_t> rs;
-  for (auto &addr : addr_and_type) {
-    std::string balance =
-        adb_ptr->get_address_balance(addr.first, std::to_string(start_block));
-    std::string type = addr.second;
+  for (auto &addr : addr_and_balance) {
+    // std::string balance =
+    // adb_ptr->get_address_balance(addr.first, std::to_string(start_block));
+    std::string balance = addr.second;
 
     neb::balance_info_t info;
     info.template set<::neb::date, ::neb::address, ::neb::balance,
-                      ::neb::account_type>(date, addr.first, balance, type);
+                      ::neb::account_type>(date, addr.first, balance, "normal");
     rs.push_back(info);
   }
 
   LOG(INFO) << "insert balance db begin...";
-  // bdb_ptr->insert_date_balances(rs);
+  bdb_ptr->insert_date_balances(rs);
   LOG(INFO) << "insert balance db done";
 }
 
 void write_to_balance_db(tdb_ptr_t tdb_ptr, adb_ptr_t adb_ptr,
-                         bdb_ptr_t bdb_ptr, time_t end_ts) {
+                         bdb_ptr_t bdb_ptr, time_t end_ts, size_t parallel) {
 
   time_t seconds_of_day = 24 * 60 * 60;
   time_t seconds_of_ten_minute = 10 * 60;
@@ -92,7 +149,8 @@ void write_to_balance_db(tdb_ptr_t tdb_ptr, adb_ptr_t adb_ptr,
 
   std::string date = neb::time_utils::time_t_to_date(start_ts);
   LOG(INFO) << date << ',' << start_block << ',' << end_block;
-  write_date_balance(tdb_ptr, adb_ptr, bdb_ptr, date, start_block, end_block);
+  write_date_balance(tdb_ptr, adb_ptr, bdb_ptr, date, start_block, end_block,
+                     parallel);
 }
 
 struct db_ptr_set_t {
@@ -144,6 +202,7 @@ int main(int argc, char *argv[]) {
   std::string chain = FLAGS_chain;
   int32_t start_ts = FLAGS_start_ts;
   int32_t end_ts = FLAGS_end_ts;
+  size_t parallel = FLAGS_parallel;
 
   db_ptr_set_t db_ptr_set = get_db_ptr_set(chain);
   tdb_ptr_t tdb_ptr = db_ptr_set.tdb_ptr;
@@ -153,7 +212,7 @@ int main(int argc, char *argv[]) {
   time_t seconds_of_day = 24 * 60 * 60;
 
   for (time_t ts = start_ts; ts < end_ts; ts += seconds_of_day) {
-    write_to_balance_db(tdb_ptr, adb_ptr, bdb_ptr, ts);
+    write_to_balance_db(tdb_ptr, adb_ptr, bdb_ptr, ts, parallel);
   }
   return 0;
 }
