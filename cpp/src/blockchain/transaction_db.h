@@ -193,8 +193,9 @@ public:
             "gas_price:tx.gas_price, contract_address:tx.contract_address, "
             "tx_type:tx.tx_type}") %
         address);
-    auto resp_ptr = this->aql_query(aql);
-    return from_response(std::move(resp_ptr));
+    return this->aql_query_with_batch(aql);
+    // auto resp_ptr = this->aql_query(aql);
+    // return from_response(std::move(resp_ptr));
   }
 
   virtual void

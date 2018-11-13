@@ -36,17 +36,42 @@ public:
 
 public:
   std::unique_ptr<::arangodb::fuerte::Response>
-  aql_query(const std::string &aql) {
+  aql_query(const std::string &aql, int32_t batch_size = 0x7fffffff) {
     auto request =
         ::arangodb::fuerte::createRequest(::arangodb::fuerte::RestVerb::Post,
                                           "/_db/" + m_dbname + "/_api/cursor");
     VPackBuilder builder;
     builder.openObject();
     builder.add("query", VPackValue(aql));
-    builder.add("batchSize", VPackValue(0x7fffffff));
+    builder.add("batchSize", VPackValue(batch_size));
     builder.close();
     request->addVPack(builder.slice());
     return m_connection_ptr->sendRequest(std::move(request));
+  }
+
+  std::unique_ptr<::arangodb::fuerte::Response>
+  aql_query_with_batch_helper(const std::string &id) {
+    auto request = ::arangodb::fuerte::createRequest(
+        ::arangodb::fuerte::RestVerb::Put,
+        "/_db/" + m_dbname + "/_api/cursor/" + id);
+    return m_connection_ptr->sendRequest(std::move(request));
+  }
+
+  std::shared_ptr<std::vector<typename InfoSetter::info_type>>
+  aql_query_with_batch(const std::string &aql, int32_t batch_size = 1 << 10) {
+
+    std::vector<typename InfoSetter::info_type> rs;
+    auto resp_ptr = aql_query(aql, batch_size);
+    parse_from_response(resp_ptr, rs);
+
+    int32_t has_more = resp_ptr->slices().front().get("hasMore").getBool();
+    while (has_more) {
+      std::string id = resp_ptr->slices().front().get("id").copyString();
+      resp_ptr = aql_query_with_batch_helper(id);
+      has_more = resp_ptr->slices().front().get("hasMore").getBool();
+      parse_from_response(resp_ptr, rs);
+    }
+    return std::make_shared<std::vector<typename InfoSetter::info_type>>(rs);
   }
 
 protected:

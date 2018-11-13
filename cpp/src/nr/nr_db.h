@@ -131,11 +131,12 @@ public:
     const std::string aql = boost::str(
         boost::format("for item in nr filter item.date=='%1%' return item") %
         date);
-    auto resp_ptr = this->aql_query(aql);
+    return this->aql_query_with_batch(aql);
+    // auto resp_ptr = this->aql_query(aql);
 
-    std::vector<nr_info_t> rs;
-    base_db_t::parse_from_response(std::move(resp_ptr), rs);
-    return std::make_shared<std::vector<nr_info_t>>(rs);
+    // std::vector<nr_info_t> rs;
+    // base_db_t::parse_from_response(std::move(resp_ptr), rs);
+    // return std::make_shared<std::vector<nr_info_t>>(rs);
   }
 
   virtual std::string nr_infos_to_string(const std::vector<nr_info_t> &rs) {
