@@ -27,7 +27,10 @@ def get_batch_results_by_cursor(dbname, id):
     request.get_method = lambda:'PUT'
 
     request = urllib2.urlopen(request)
-    return request.read()
+
+    d = json.loads(request.read())
+    d['has_more'] = d['hasMore']
+    return json.dumps(d)
 
 
 def main():
