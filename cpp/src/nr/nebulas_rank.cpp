@@ -59,9 +59,9 @@ void nebulas_rank::filter_empty_transactions_this_interval(
 }
 
 template <class TransInfo>
-transaction_graph_ptr nebulas_rank::build_graph_from_transactions(
+transaction_graph_ptr_t nebulas_rank::build_graph_from_transactions(
     const std::vector<TransInfo> &trans) {
-  transaction_graph_ptr ret = std::make_shared<transaction_graph>();
+  transaction_graph_ptr_t ret = std::make_shared<transaction_graph>();
 
   for (auto ite = trans.begin(); ite != trans.end(); ite++) {
     std::string from = ite->template get<::neb::from>();
@@ -74,9 +74,9 @@ transaction_graph_ptr nebulas_rank::build_graph_from_transactions(
   return ret;
 }
 
-std::vector<transaction_graph_ptr> nebulas_rank::build_transaction_graphs(
+std::vector<transaction_graph_ptr_t> nebulas_rank::build_transaction_graphs(
     const std::vector<std::vector<transaction_info_t>> &txs) {
-  std::vector<transaction_graph_ptr> tgs;
+  std::vector<transaction_graph_ptr_t> tgs;
 
   for (auto it = txs.begin(); it != txs.end(); it++) {
     auto p = build_graph_from_transactions(*it);
@@ -217,7 +217,7 @@ nebulas_rank::get_account_score_service() {
   LOG(INFO) << "split transactions into " << txs.size() << " size.";
   filter_empty_transactions_this_interval(txs);
 
-  std::vector<transaction_graph_ptr> tgs = build_transaction_graphs(txs);
+  std::vector<transaction_graph_ptr_t> tgs = build_transaction_graphs(txs);
   if (tgs.empty()) {
     LOG(INFO) << "empty transaction graph";
     return std::make_shared<std::unordered_map<std::string, double>>();
@@ -225,13 +225,13 @@ nebulas_rank::get_account_score_service() {
   LOG(INFO) << "we have " << tgs.size() << " subgraphs.";
 
   for (auto it = tgs.begin(); it != tgs.end(); it++) {
-    transaction_graph_ptr ptr = *it;
+    transaction_graph_ptr_t ptr = *it;
     graph_algo::remove_cycles_based_on_time_sequence(ptr->internal_graph());
     graph_algo::merge_edges_with_same_from_and_same_to(ptr->internal_graph());
   }
   LOG(INFO) << "done with remove cycle.";
 
-  transaction_graph_ptr tg = graph_algo::merge_graphs(tgs);
+  transaction_graph_ptr_t tg = graph_algo::merge_graphs(tgs);
   graph_algo::merge_topk_edges_with_same_from_and_same_to(tg->internal_graph());
   LOG(INFO) << "done with merge graphs.";
 

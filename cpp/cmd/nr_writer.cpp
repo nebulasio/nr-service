@@ -47,14 +47,14 @@ void nebulas_rank_detail(const tdb_ptr_t tdb_ptr, const adb_ptr_t adb_ptr,
   auto it_txs_v = nr.split_transactions_by_x_block_interval(account_inter_txs);
   auto txs_v = *it_txs_v;
   nr.filter_empty_transactions_this_interval(txs_v);
-  std::vector<neb::transaction_graph_ptr> tgs =
+  std::vector<neb::transaction_graph_ptr_t> tgs =
       nr.build_transaction_graphs(txs_v);
   if (tgs.empty()) {
     return;
   }
   LOG(INFO) << "we have " << tgs.size() << " subgraphs.";
   for (auto it = tgs.begin(); it != tgs.end(); it++) {
-    neb::transaction_graph_ptr ptr = *it;
+    neb::transaction_graph_ptr_t ptr = *it;
     neb::graph_algo::remove_cycles_based_on_time_sequence(
         ptr->internal_graph());
     neb::graph_algo::merge_edges_with_same_from_and_same_to(
@@ -62,7 +62,7 @@ void nebulas_rank_detail(const tdb_ptr_t tdb_ptr, const adb_ptr_t adb_ptr,
   }
   LOG(INFO) << "done with remove cycle.";
 
-  neb::transaction_graph_ptr tg = neb::graph_algo::merge_graphs(tgs);
+  neb::transaction_graph_ptr_t tg = neb::graph_algo::merge_graphs(tgs);
   neb::graph_algo::merge_topk_edges_with_same_from_and_same_to(
       tg->internal_graph());
   LOG(INFO) << "done with merge graphs.";

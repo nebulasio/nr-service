@@ -44,3 +44,6 @@ target_link_libraries(balance_writer ${common_libs} gflags)
 add_executable(nr_writer nr_writer.cpp)
 target_link_libraries(nr_writer ${common_libs} gflags)
 
+add_executable(graph graph.cpp)
+target_link_libraries(graph ${common_libs} gflags)
+

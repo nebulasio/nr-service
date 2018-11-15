@@ -23,8 +23,8 @@ public:
   static void merge_edges_with_same_from_and_same_to(
       transaction_graph::internal_graph_t &graph);
 
-  static transaction_graph_ptr
-  merge_graphs(const std::vector<transaction_graph_ptr> &graphs);
+  static transaction_graph_ptr_t
+  merge_graphs(const std::vector<transaction_graph_ptr_t> &graphs);
 
   static void merge_topk_edges_with_same_from_and_same_to(
       transaction_graph::internal_graph_t &graph, uint32_t k = 3);
@@ -60,7 +60,8 @@ private:
       const transaction_graph::internal_graph_t &graph)
       -> std::vector<transaction_graph::edge_descriptor_t>;
 
-  static transaction_graph_ptr merge_two_graphs(transaction_graph_ptr tg,
-                                                const transaction_graph_ptr sg);
+  static transaction_graph_ptr_t
+  merge_two_graphs(transaction_graph_ptr_t tg,
+                   const transaction_graph_ptr_t sg);
 };
 } // namespace neb

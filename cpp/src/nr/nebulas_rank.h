@@ -39,7 +39,7 @@ public:
 
   auto build_transaction_graphs(
       const std::vector<std::vector<transaction_info_t>> &txs)
-      -> std::vector<transaction_graph_ptr>;
+      -> std::vector<transaction_graph_ptr_t>;
 
   auto get_normal_accounts(const std::vector<transaction_info_t> &txs)
       -> std::shared_ptr<std::unordered_set<std::string>>;
@@ -64,7 +64,7 @@ public:
 
 private:
   template <class TransInfo>
-  transaction_graph_ptr
+  transaction_graph_ptr_t
   build_graph_from_transactions(const std::vector<TransInfo> &trans);
 
   block_height_t get_max_height_this_block_interval(

@@ -12,10 +12,7 @@ void graph_algo::dfs_find_a_cycle_from_vertex_based_on_time_sequence(
 
   if (has_cycle) return;
 
-  typedef typename boost::graph_traits<
-      transaction_graph::internal_graph_t>::out_edge_iterator oeiterator_t;
-
-  oeiterator_t oei, oei_end;
+  transaction_graph::oeiterator_t oei, oei_end;
 
   // std::string s_addr = boost::get(boost::vertex_name_t(), graph, v);
   // std::cout << "cur vertex: " << s_addr << ", out edges: ";
@@ -134,10 +131,7 @@ graph_algo::find_a_cycle_based_on_time_sequence(
     const transaction_graph::internal_graph_t &graph) {
   std::vector<transaction_graph::vertex_descriptor_t> to_visit;
 
-  typedef typename boost::graph_traits<
-      transaction_graph::internal_graph_t>::vertex_iterator viterator_t;
-
-  viterator_t vi, vi_end;
+  transaction_graph::viterator_t vi, vi_end;
 
   for (boost::tie(vi, vi_end) = boost::vertices(graph); vi != vi_end; vi++) {
     to_visit.push_back(*vi);
@@ -181,18 +175,12 @@ void graph_algo::remove_cycles_based_on_time_sequence(
 void graph_algo::merge_edges_with_same_from_and_same_to(
     transaction_graph::internal_graph_t &graph) {
 
-  typedef typename boost::graph_traits<
-      transaction_graph::internal_graph_t>::vertex_iterator viterator_t;
-  typedef typename boost::graph_traits<
-      transaction_graph::internal_graph_t>::vertex_descriptor vdescriptor_t;
-  typedef typename boost::graph_traits<
-      transaction_graph::internal_graph_t>::out_edge_iterator oeiterator_t;
-
-  viterator_t vi, vi_end;
+  transaction_graph::viterator_t vi, vi_end;
 
   for (boost::tie(vi, vi_end) = boost::vertices(graph); vi != vi_end; vi++) {
-    oeiterator_t oei, oei_end;
-    std::unordered_map<vdescriptor_t, double> target_and_vals;
+    transaction_graph::oeiterator_t oei, oei_end;
+    std::unordered_map<transaction_graph::vertex_descriptor_t, double>
+        target_and_vals;
     for (boost::tie(oei, oei_end) = boost::out_edges(*vi, graph);
          oei != oei_end; oei++) {
       auto target = boost::target(*oei, graph);
@@ -222,21 +210,16 @@ void graph_algo::merge_edges_with_same_from_and_same_to(
   return;
 }
 
-transaction_graph_ptr
-graph_algo::merge_two_graphs(transaction_graph_ptr tg,
-                             const transaction_graph_ptr sg) {
+transaction_graph_ptr_t
+graph_algo::merge_two_graphs(transaction_graph_ptr_t tg,
+                             const transaction_graph_ptr_t sg) {
 
   transaction_graph::internal_graph_t sgi = sg->internal_graph();
 
-  typedef typename boost::graph_traits<
-      transaction_graph::internal_graph_t>::vertex_iterator viterator_t;
-  typedef typename boost::graph_traits<
-      transaction_graph::internal_graph_t>::out_edge_iterator oeiterator_t;
-
-  viterator_t vi, vi_end;
+  transaction_graph::viterator_t vi, vi_end;
 
   for (boost::tie(vi, vi_end) = boost::vertices(sgi); vi != vi_end; vi++) {
-    oeiterator_t oei, oei_end;
+    transaction_graph::oeiterator_t oei, oei_end;
     for (boost::tie(oei, oei_end) = boost::out_edges(*vi, sgi); oei != oei_end;
          oei++) {
       auto source = boost::source(*oei, sgi);
@@ -251,12 +234,12 @@ graph_algo::merge_two_graphs(transaction_graph_ptr tg,
   return tg;
 }
 
-transaction_graph_ptr
-graph_algo::merge_graphs(const std::vector<transaction_graph_ptr> &graphs) {
+transaction_graph_ptr_t
+graph_algo::merge_graphs(const std::vector<transaction_graph_ptr_t> &graphs) {
   if (!graphs.empty()) {
-    transaction_graph_ptr ret = *graphs.begin();
+    transaction_graph_ptr_t ret = *graphs.begin();
     for (auto it = graphs.begin() + 1; it != graphs.end(); it++) {
-      transaction_graph_ptr ptr = *it;
+      transaction_graph_ptr_t ptr = *it;
       ret = merge_two_graphs(ret, ptr);
     }
     return ret;
@@ -267,14 +250,7 @@ graph_algo::merge_graphs(const std::vector<transaction_graph_ptr> &graphs) {
 void graph_algo::merge_topk_edges_with_same_from_and_same_to(
     transaction_graph::internal_graph_t &graph, uint32_t k) {
 
-  typedef typename boost::graph_traits<
-      transaction_graph::internal_graph_t>::vertex_iterator viterator_t;
-  typedef typename boost::graph_traits<
-      transaction_graph::internal_graph_t>::vertex_descriptor vdescriptor_t;
-  typedef typename boost::graph_traits<
-      transaction_graph::internal_graph_t>::out_edge_iterator oeiterator_t;
-
-  viterator_t vi, vi_end;
+  transaction_graph::viterator_t vi, vi_end;
 
   struct edge_st {
     double weight;
@@ -288,10 +264,12 @@ void graph_algo::merge_topk_edges_with_same_from_and_same_to(
   typedef std::priority_queue<edge_st, std::vector<edge_st>, decltype(cmp)> pq_t;
 
   for (boost::tie(vi, vi_end) = boost::vertices(graph); vi != vi_end; vi++) {
-    std::unordered_map<vdescriptor_t, double> target_and_vals;
-    std::unordered_map<vdescriptor_t, pq_t> target_and_minheap;
+    std::unordered_map<transaction_graph::vertex_descriptor_t, double>
+        target_and_vals;
+    std::unordered_map<transaction_graph::vertex_descriptor_t, pq_t>
+        target_and_minheap;
 
-    oeiterator_t oei, oei_end;
+    transaction_graph::oeiterator_t oei, oei_end;
     for (boost::tie(oei, oei_end) = boost::out_edges(*vi, graph);
          oei != oei_end; oei++) {
       auto target = boost::target(*oei, graph);
@@ -343,17 +321,10 @@ graph_algo::get_in_out_vals(const transaction_graph::internal_graph_t &graph) {
 
   std::unordered_map<std::string, in_out_val> ret;
 
-  typedef typename boost::graph_traits<
-      transaction_graph::internal_graph_t>::vertex_iterator viterator_t;
-  typedef typename boost::graph_traits<
-      transaction_graph::internal_graph_t>::in_edge_iterator ieiterator_t;
-  typedef typename boost::graph_traits<
-      transaction_graph::internal_graph_t>::out_edge_iterator oeiterator_t;
-
-  viterator_t vi, vi_end;
+  transaction_graph::viterator_t vi, vi_end;
 
   for (boost::tie(vi, vi_end) = boost::vertices(graph); vi != vi_end; vi++) {
-    ieiterator_t iei, iei_end;
+    transaction_graph::ieiterator_t iei, iei_end;
     double in_val = 0;
     for (boost::tie(iei, iei_end) = boost::in_edges(*vi, graph); iei != iei_end;
          iei++) {
@@ -361,7 +332,7 @@ graph_algo::get_in_out_vals(const transaction_graph::internal_graph_t &graph) {
       in_val += val;
     }
 
-    oeiterator_t oei, oei_end;
+    transaction_graph::oeiterator_t oei, oei_end;
     double out_val = 0;
     for (boost::tie(oei, oei_end) = boost::out_edges(*vi, graph);
          oei != oei_end; oei++) {
@@ -395,24 +366,17 @@ graph_algo::get_in_out_degrees(
 
   std::unordered_map<std::string, in_out_degree> ret;
 
-  typedef typename boost::graph_traits<
-      transaction_graph::internal_graph_t>::vertex_iterator viterator_t;
-  typedef typename boost::graph_traits<
-      transaction_graph::internal_graph_t>::in_edge_iterator ieiterator_t;
-  typedef typename boost::graph_traits<
-      transaction_graph::internal_graph_t>::out_edge_iterator oeiterator_t;
-
-  viterator_t vi, vi_end;
+  transaction_graph::viterator_t vi, vi_end;
 
   for (boost::tie(vi, vi_end) = boost::vertices(graph); vi != vi_end; vi++) {
-    ieiterator_t iei, iei_end;
+    transaction_graph::ieiterator_t iei, iei_end;
     int in_degree = 0;
     for (boost::tie(iei, iei_end) = boost::in_edges(*vi, graph); iei != iei_end;
          iei++) {
       in_degree++;
     }
 
-    oeiterator_t oei, oei_end;
+    transaction_graph::oeiterator_t oei, oei_end;
     int out_degree = 0;
     for (boost::tie(oei, oei_end) = boost::out_edges(*vi, graph);
          oei != oei_end; oei++) {
