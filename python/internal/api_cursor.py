@@ -9,6 +9,7 @@ sys.path.append('../')
 import json
 import urllib2
 
+
 def get_batch_results_by_cursor(dbname, id):
     '''
     @dbname - nebulas or ethereum database name

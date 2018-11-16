@@ -11,6 +11,7 @@ from util.util import LOG
 
 from arango import ArangoClient
 
+
 dbuser = os.environ['DB_USER_NAME']
 dbpass = os.environ['DB_PASSWORD']
 

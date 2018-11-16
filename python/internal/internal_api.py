@@ -21,11 +21,10 @@ api = Api(app)
 
 @app.route('/transaction')
 def api_nebulas_transaction():
-    ret = str()
     if 'address' not in request.args:
-        return ret
+        return str()
     if 'db' not in request.args:
-        return ret
+        return str()
 
     address = str(request.args['address'])
     dbname = str(request.args['db'])
@@ -39,11 +38,10 @@ def api_nebulas_transaction():
 
 @app.route('/nr')
 def api_nebulas_nr():
-    ret = str()
     if 'db' not in request.args:
-        return ret
+        return str()
     if 'date' not in request.args and 'address' not in request.args:
-        return ret
+        return str()
 
     dbname = str(request.args['db'])
     batch_size = 1 << 8
@@ -61,16 +59,15 @@ def api_nebulas_nr():
         address = str(request.args['address'])
         return api_nr.get_nr_by_address(dbname, batch_size, address)
 
-    return ret
+    return str()
 
 
 @app.route('/cursor')
 def api_nebulas_cursor():
-    ret = str()
     if 'db' not in request.args:
-        return ret
+        return str()
     if 'id' not in request.args:
-        return ret
+        return str()
 
     dbname = str(request.args['db'])
     id = str(request.args['id'])
