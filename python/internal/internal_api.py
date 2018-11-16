@@ -40,22 +40,28 @@ def api_nebulas_transaction():
 @app.route('/nr')
 def api_nebulas_nr():
     ret = str()
-    if 'date' not in request.args:
-        return ret
     if 'db' not in request.args:
         return ret
+    if 'date' not in request.args and 'address' not in request.args:
+        return ret
 
-    date = str(request.args['date'])
     dbname = str(request.args['db'])
     batch_size = 1 << 8
     if 'batch_size' in request.args:
         batch_size = int(request.args['batch_size'])
 
-    if 'address' in request.args:
+    if 'date' in request.args and 'address' in request.args:
+        date = str(request.args['date'])
         address = str(request.args['address'])
         return api_nr.get_nr_by_date_address(dbname, batch_size, date, address)
+    elif 'date' in request.args:
+        date = str(request.args['date'])
+        return api_nr.get_nr_by_date(dbname, batch_size, date)
+    elif 'address' in request.args:
+        address = str(request.args['address'])
+        return api_nr.get_nr_by_address(dbname, batch_size, address)
 
-    return api_nr.get_nr_by_date(dbname, batch_size, date)
+    return ret
 
 
 @app.route('/cursor')
