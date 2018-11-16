@@ -75,7 +75,7 @@ link_directories(/usr/local/lib)
 add_subdirectory(src)
 enable_testing()
 
-set(common_libs tga_engine fuerte velocypack boost_system boost_thread pthread curl ssl crypto mysqlcppconn boost_date_time glog http_parser boost_graph)
+set(common_libs tga_engine fuerte velocypack boost_system boost_thread pthread curl ssl crypto mysqlcppconn boost_date_time glog http_parser boost_graph boost_filesystem)
 add_subdirectory(apiserver)
 add_subdirectory(test)
 

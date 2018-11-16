@@ -27,11 +27,28 @@ typedef neb::account_db<neb::eth_db> eth_account_db_t;
 typedef neb::nr_db<neb::eth_db> eth_nr_db_t;
 typedef neb::balance_db<neb::eth_db> eth_balance_db_t;
 
-void nebulas_rank_detail(const tdb_ptr_t tdb_ptr, const adb_ptr_t adb_ptr,
-                         const ndb_ptr_t ndb_ptr, const bdb_ptr_t bdb_ptr,
-                         const std::string &date,
-                         neb::block_height_t start_block,
-                         neb::block_height_t end_block) {
+struct db_ptr_set_t {
+  std::string chain;
+  tdb_ptr_t tdb_ptr;
+  adb_ptr_t adb_ptr;
+  ndb_ptr_t ndb_ptr;
+  bdb_ptr_t bdb_ptr;
+};
+
+bool exists(const std::string &p) {
+  return boost::filesystem::exists(boost::filesystem::path(p));
+}
+
+void write_date_nr(const db_ptr_set_t db_ptr_set, const std::string &date,
+                   neb::block_height_t start_block,
+                   neb::block_height_t end_block) {
+
+  std::string chain = db_ptr_set.chain;
+  tdb_ptr_t tdb_ptr = db_ptr_set.tdb_ptr;
+  adb_ptr_t adb_ptr = db_ptr_set.adb_ptr;
+  ndb_ptr_t ndb_ptr = db_ptr_set.ndb_ptr;
+  bdb_ptr_t bdb_ptr = db_ptr_set.bdb_ptr;
+
   LOG(INFO) << "start block: " << start_block << " , end block: " << end_block;
   neb::rank_params_t rp{2000.0, 200000.0, 100.0, 1000.0, 0.75, 3.14};
   neb::nebulas_rank nr(tdb_ptr, adb_ptr, rp, start_block, end_block);
@@ -46,26 +63,37 @@ void nebulas_rank_detail(const tdb_ptr_t tdb_ptr, const adb_ptr_t adb_ptr,
   // graph
   auto it_txs_v = nr.split_transactions_by_x_block_interval(account_inter_txs);
   auto txs_v = *it_txs_v;
-  nr.filter_empty_transactions_this_interval(txs_v);
-  std::vector<neb::transaction_graph_ptr_t> tgs =
-      nr.build_transaction_graphs(txs_v);
-  if (tgs.empty()) {
-    return;
-  }
-  LOG(INFO) << "we have " << tgs.size() << " subgraphs.";
-  for (auto it = tgs.begin(); it != tgs.end(); it++) {
-    neb::transaction_graph_ptr_t ptr = *it;
-    neb::graph_algo::remove_cycles_based_on_time_sequence(
-        ptr->internal_graph());
-    neb::graph_algo::merge_edges_with_same_from_and_same_to(
-        ptr->internal_graph());
-  }
-  LOG(INFO) << "done with remove cycle.";
 
-  neb::transaction_graph_ptr_t tg = neb::graph_algo::merge_graphs(tgs);
-  neb::graph_algo::merge_topk_edges_with_same_from_and_same_to(
-      tg->internal_graph());
-  LOG(INFO) << "done with merge graphs.";
+  neb::transaction_graph_ptr_t tg = std::make_shared<neb::transaction_graph>();
+
+  std::string filename = "../cache/" + chain + '-' + date + ".dot";
+  if (!exists(filename)) {
+    // cache remove cycles result
+    nr.filter_empty_transactions_this_interval(txs_v);
+    std::vector<neb::transaction_graph_ptr_t> tgs =
+        nr.build_transaction_graphs(txs_v);
+    if (tgs.empty()) {
+      return;
+    }
+    LOG(INFO) << "we have " << tgs.size() << " subgraphs.";
+    for (auto it = tgs.begin(); it != tgs.end(); it++) {
+      neb::transaction_graph_ptr_t ptr = *it;
+      neb::graph_algo::remove_cycles_based_on_time_sequence(
+          ptr->internal_graph());
+      neb::graph_algo::merge_edges_with_same_from_and_same_to(
+          ptr->internal_graph());
+    }
+    LOG(INFO) << "done with remove cycle.";
+
+    tg = neb::graph_algo::merge_graphs(tgs);
+    neb::graph_algo::merge_topk_edges_with_same_from_and_same_to(
+        tg->internal_graph());
+    LOG(INFO) << "done with merge graphs.";
+    tg->write_to_graphviz(filename);
+  } else {
+    // read from cache
+    tg->read_from_graphviz(filename);
+  }
 
   // median
   auto it_accounts = nr.get_normal_accounts(account_inter_txs);
@@ -149,9 +177,12 @@ void nebulas_rank_detail(const tdb_ptr_t tdb_ptr, const adb_ptr_t adb_ptr,
   LOG(INFO) << "insert to db done";
 }
 
-void write_to_nebulas_rank_db(const tdb_ptr_t tdb_ptr, const adb_ptr_t adb_ptr,
-                              const ndb_ptr_t ndb_ptr, const bdb_ptr_t bdb_ptr,
-                              time_t end_ts) {
+void write_to_nebulas_rank_db(const db_ptr_set_t db_ptr_set, time_t end_ts) {
+
+  tdb_ptr_t tdb_ptr = db_ptr_set.tdb_ptr;
+  adb_ptr_t adb_ptr = db_ptr_set.adb_ptr;
+  ndb_ptr_t ndb_ptr = db_ptr_set.ndb_ptr;
+  bdb_ptr_t bdb_ptr = db_ptr_set.bdb_ptr;
 
   time_t seconds_of_day = 24 * 60 * 60;
   time_t seconds_of_ten_minute = 10 * 60;
@@ -183,17 +214,9 @@ void write_to_nebulas_rank_db(const tdb_ptr_t tdb_ptr, const adb_ptr_t adb_ptr,
 
   std::string date = neb::time_utils::time_t_to_date(start_ts);
   LOG(INFO) << date;
-  nebulas_rank_detail(tdb_ptr, adb_ptr, ndb_ptr, bdb_ptr, date, start_block,
-                      end_block);
+  write_date_nr(db_ptr_set, date, start_block, end_block);
   return;
 }
-
-struct db_ptr_set_t {
-  tdb_ptr_t tdb_ptr;
-  adb_ptr_t adb_ptr;
-  ndb_ptr_t ndb_ptr;
-  bdb_ptr_t bdb_ptr;
-};
 
 db_ptr_set_t get_db_ptr_set(const std::string &chain) {
   std::string db_url = std::getenv("DB_URL");
@@ -218,7 +241,7 @@ db_ptr_set_t get_db_ptr_set(const std::string &chain) {
     ndb_ptr_t ndb_ptr = std::make_shared<nebulas_nr_db_t>(ndb);
     bdb_ptr_t bdb_ptr = std::make_shared<nebulas_balance_db_t>(bdb);
 
-    return db_ptr_set_t{tdb_ptr, adb_ptr, ndb_ptr, bdb_ptr};
+    return db_ptr_set_t{chain, tdb_ptr, adb_ptr, ndb_ptr, bdb_ptr};
   }
 
   std::string db_name = std::getenv("ETH_DB");
@@ -233,7 +256,7 @@ db_ptr_set_t get_db_ptr_set(const std::string &chain) {
   ndb_ptr_t ndb_ptr = std::make_shared<eth_nr_db_t>(ndb);
   bdb_ptr_t bdb_ptr = std::make_shared<eth_balance_db_t>(bdb);
 
-  return db_ptr_set_t{tdb_ptr, adb_ptr, ndb_ptr, bdb_ptr};
+  return db_ptr_set_t{chain, tdb_ptr, adb_ptr, ndb_ptr, bdb_ptr};
 }
 
 int main(int argc, char *argv[]) {
@@ -245,15 +268,10 @@ int main(int argc, char *argv[]) {
   int32_t end_ts = FLAGS_end_ts;
 
   db_ptr_set_t db_ptr_set = get_db_ptr_set(chain);
-  tdb_ptr_t tdb_ptr = db_ptr_set.tdb_ptr;
-  adb_ptr_t adb_ptr = db_ptr_set.adb_ptr;
-  ndb_ptr_t ndb_ptr = db_ptr_set.ndb_ptr;
-  bdb_ptr_t bdb_ptr = db_ptr_set.bdb_ptr;
-
   time_t seconds_of_day = 24 * 60 * 60;
 
   for (time_t ts = start_ts; ts < end_ts; ts += seconds_of_day) {
-    write_to_nebulas_rank_db(tdb_ptr, adb_ptr, ndb_ptr, bdb_ptr, ts);
+    write_to_nebulas_rank_db(db_ptr_set, ts);
   }
   return 0;
 }

@@ -12,6 +12,7 @@
 #include <unordered_set>
 
 #include <boost/asio.hpp>
+#include <boost/filesystem.hpp>
 #include <boost/foreach.hpp>
 #include <boost/format.hpp>
 #include <boost/multiprecision/cpp_int.hpp>
