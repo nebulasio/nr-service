@@ -32,7 +32,7 @@ public:
 
   void write_to_graphviz(const std::string &filename);
 
-  bool read_from_graphviz(const std::string &filename, internal_graph_t &graph);
+  bool read_from_graphviz(const std::string &filename);
 
   inline internal_graph_t &internal_graph() { return m_graph; }
   inline const internal_graph_t &internal_graph() const { return m_graph; }

@@ -53,8 +53,7 @@ void transaction_graph::write_to_graphviz(const std::string &filename) {
   of.close();
 }
 
-bool transaction_graph::read_from_graphviz(const std::string &filename,
-                                           internal_graph_t &graph) {
+bool transaction_graph::read_from_graphviz(const std::string &filename) {
   std::ifstream ifs(filename);
   if (!ifs) {
     return false;
@@ -65,9 +64,9 @@ bool transaction_graph::read_from_graphviz(const std::string &filename,
   ifs.close();
 
   boost::dynamic_properties dp(boost::ignore_other_properties);
-  dp.property("label", boost::get(boost::vertex_name, graph));
-  dp.property("label", boost::get(boost::edge_weight, graph));
-  return boost::read_graphviz(ss, graph, dp);
+  dp.property("label", boost::get(boost::vertex_name, m_graph));
+  dp.property("label", boost::get(boost::edge_weight, m_graph));
+  return boost::read_graphviz(ss, m_graph, dp);
 }
 
 transaction_graph_ptr_t build_graph_from_internal(
