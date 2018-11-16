@@ -1,4 +1,4 @@
-add_executable(eth_test main.cpp
+add_executable(test_eth main.cpp
   gtest_eth_transaction_db.cpp
   )
-target_link_libraries(eth_test gtest ${common_libs})
+target_link_libraries(test_eth gtest ${common_libs})
