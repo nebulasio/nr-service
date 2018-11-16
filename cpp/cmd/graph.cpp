@@ -36,18 +36,15 @@ int main(int argc, char *argv[]) {
           std::getenv("DB_URL"), std::getenv("DB_USER_NAME"),
           std::getenv("DB_PASSWORD"), std::getenv("NEBULAS_DB"));
 
-  auto it_txs = tx_ptr->read_inter_transaction_from_db_with_duration(
+  auto txs_ptr = tx_ptr->read_inter_transaction_from_db_with_duration(
       start_block, end_block);
-  auto tx_graph_ptr = build_graph_from_transactions(*it_txs);
-  auto in_out_vals_raw =
-      neb::graph_algo::get_in_out_vals(tx_graph_ptr->internal_graph());
 
-  tx_graph_ptr->write_to_graphviz("xx.dot");
-  neb::transaction_graph::internal_graph_t g;
-  tx_graph_ptr->read_from_graphviz("xx.dot", g);
+  auto tgp_ptr_raw = build_graph_from_transactions(*txs_ptr);
+  tgp_ptr_raw->write_to_graphviz("xx.dot");
 
-  auto tg_ptr = neb::build_graph_from_internal(g);
-  tg_ptr->write_to_graphviz("yy.dot");
+  neb::transaction_graph_ptr_t tgp = std::make_shared<neb::transaction_graph>();
+  tgp->read_from_graphviz("xx.dot");
+  tgp->write_to_graphviz("yy.dot");
 
   return 0;
 }
