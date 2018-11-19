@@ -3,10 +3,9 @@
 #include "utils.h"
 
 DEFINE_string(chain, "nebulas", "chain name, nebulas or eth");
-DEFINE_int64(start_block, 0, "the start block height");
-DEFINE_int64(end_block, 1, "the end block height");
 DEFINE_int32(start_ts, 0, "the first day end timestamp");
 DEFINE_int32(end_ts, 1, "the last day end timestamp");
+DEFINE_int32(thread_nums, 1, "the number of thread");
 
 typedef neb::transaction_db_interface transaction_db_t;
 typedef std::shared_ptr<transaction_db_t> tdb_ptr_t;
@@ -259,19 +258,44 @@ db_ptr_set_t get_db_ptr_set(const std::string &chain) {
   return db_ptr_set_t{chain, tdb_ptr, adb_ptr, ndb_ptr, bdb_ptr};
 }
 
+void para_run(const db_ptr_set_t db_ptr_set, time_t end_ts,
+              int32_t thread_nums) {
+
+  auto start_time = std::chrono::high_resolution_clock::now();
+  std::vector<std::thread> tv;
+  time_t seconds_of_day = 24 * 60 * 60;
+
+  for (int32_t i = 0; i < thread_nums; i++) {
+    time_t ts = end_ts + i * seconds_of_day;
+    std::thread t(
+        [&db_ptr_set, ts]() { write_to_nebulas_rank_db(db_ptr_set, ts); });
+    tv.push_back(std::move(t));
+  }
+
+  for (auto &t : tv) {
+    t.join();
+  }
+
+  auto end_time = std::chrono::high_resolution_clock::now();
+  LOG(INFO) << "time spend: "
+            << std::chrono::duration_cast<std::chrono::seconds>(end_time -
+                                                                start_time)
+                   .count();
+}
+
 int main(int argc, char *argv[]) {
   gflags::ParseCommandLineFlags(&argc, &argv, true);
   std::string chain = FLAGS_chain;
-  int64_t start_block = FLAGS_start_block;
-  int64_t end_block = FLAGS_end_block;
   int32_t start_ts = FLAGS_start_ts;
   int32_t end_ts = FLAGS_end_ts;
+  int32_t thread_nums = FLAGS_thread_nums;
 
   db_ptr_set_t db_ptr_set = get_db_ptr_set(chain);
   time_t seconds_of_day = 24 * 60 * 60;
 
-  for (time_t ts = start_ts; ts < end_ts; ts += seconds_of_day) {
-    write_to_nebulas_rank_db(db_ptr_set, ts);
+  for (time_t ts = start_ts; ts < end_ts;
+       ts += (seconds_of_day * thread_nums)) {
+    para_run(db_ptr_set, ts, thread_nums);
   }
   return 0;
 }
