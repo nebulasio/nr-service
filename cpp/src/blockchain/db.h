@@ -36,7 +36,8 @@ public:
 
 public:
   std::unique_ptr<::arangodb::fuerte::Response>
-  aql_query(const std::string &aql, int32_t batch_size = 0x7fffffff) {
+  aql_query(const std::string &aql, int32_t batch_size = 0x7fffffff,
+            int32_t ttl = 600) {
     auto request =
         ::arangodb::fuerte::createRequest(::arangodb::fuerte::RestVerb::Post,
                                           "/_db/" + m_dbname + "/_api/cursor");
@@ -44,6 +45,7 @@ public:
     builder.openObject();
     builder.add("query", VPackValue(aql));
     builder.add("batchSize", VPackValue(batch_size));
+    builder.add("ttl", VPackValue(ttl));
     builder.close();
     request->addVPack(builder.slice());
     return m_connection_ptr->sendRequest(std::move(request));
@@ -66,6 +68,7 @@ public:
 
     int32_t has_more = resp_ptr->slices().front().get("hasMore").getBool();
     while (has_more) {
+      LOG(INFO) << "result set size: " << rs.size();
       std::string id = resp_ptr->slices().front().get("id").copyString();
       resp_ptr = aql_query_with_batch_helper(id);
       has_more = resp_ptr->slices().front().get("hasMore").getBool();

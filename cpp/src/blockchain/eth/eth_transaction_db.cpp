@@ -110,7 +110,7 @@ void eth_transaction_db::insert_transactions_to_db(block_height_t start_block,
     LOG(INFO) << "get block transactions by height done, size: " << txs.size();
     auto it_internal_txs = eth_api::trace_block(h);
     auto internal_txs = *it_internal_txs;
-    LOG(INFO) << "trace block done, size: " << internal_txs.size();
+    LOG(INFO) << h << " ,trace block done, size: " << internal_txs.size();
 
     set_transactions(txs, internal_txs);
     LOG(INFO) << "cached address size: " << m_addr_and_type.size();
@@ -144,6 +144,8 @@ void eth_transaction_db::set_transactions(
 
     std::string from = it_internal_tx->template get<::neb::from>();
     std::string to = it_internal_tx->template get<::neb::to>();
+
+    // TODO get address type extremely slow when DDos attacking
     std::string type_from = get_address_type(
         from, string_utils::to_hex(std::to_string(
                   it_internal_tx->template get<::neb::height>())));

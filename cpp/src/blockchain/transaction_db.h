@@ -125,6 +125,12 @@ public:
 
       auto v = read_inter_transaction_from_db_with_duration_sharding(s, e);
       ret.insert(ret.end(), v->begin(), v->end());
+
+      LOG(INFO) << boost::str(
+          boost::format(
+              "for block interval [%1%, %2%] done block %3%, (%4% percent)") %
+          start_block % end_block % e %
+          ((e - start_block) * 100 / (end_block - start_block)));
     }
     return std::make_shared<std::vector<transaction_info_t>>(ret);
   }
