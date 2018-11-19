@@ -56,12 +56,14 @@ void get_address_parallel(
 
   for (size_t i = 0; i < addr_type_list.size(); i++) {
     std::thread t([&, i]() {
+      std::unordered_map<std::string, std::string> tmp;
       for (auto &addr : addr_type_list[i]) {
         std::string balance = adb_ptr->get_address_balance(
             addr.first, std::to_string(block_height));
-        std::lock_guard<std::mutex> lg(lock);
-        addr_and_balance.insert(std::make_pair(addr.first, balance));
+        tmp.insert(std::make_pair(addr.first, balance));
       }
+      std::lock_guard<std::mutex> lg(lock);
+      addr_and_balance.insert(tmp.begin(), tmp.end());
     });
     tv.push_back(std::move(t));
   }
