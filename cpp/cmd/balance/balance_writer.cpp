@@ -198,14 +198,28 @@ db_ptr_set_t get_db_ptr_set(const std::string &chain) {
   return db_ptr_set_t{tdb_ptr, adb_ptr, bdb_ptr};
 }
 
-time_t get_eth_balance_db_start_ts() {
+time_t get_balance_db_start_ts(const std::string &chain) {
 
-  std::shared_ptr<eth_balance_db_t> ptr = std::make_shared<eth_balance_db_t>(
-      std::getenv("DB_URL"), std::getenv("DB_USER_NAME"),
-      std::getenv("DB_PASSWORD"), std::getenv("ETH_DB"));
+  assert(chain.compare("nebulas") == 0 || chain.compare("eth") == 0);
+  std::unique_ptr<::arangodb::fuerte::Response> resp_ptr;
 
-  std::unique_ptr<::arangodb::fuerte::Response> resp_ptr = ptr->aql_query(
-      "for item in balance sort item.date desc limit 1 return item.date", 1);
+  if (chain.compare("nebulas") == 0) {
+    std::shared_ptr<nebulas_balance_db_t> ptr =
+        std::make_shared<nebulas_balance_db_t>(
+            std::getenv("DB_URL"), std::getenv("DB_USER_NAME"),
+            std::getenv("DB_PASSWORD"), std::getenv("NEBULAS_DB"));
+
+    resp_ptr = ptr->aql_query(
+        "for item in balance sort item.date desc limit 1 return item.date", 1);
+
+  } else {
+    std::shared_ptr<eth_balance_db_t> ptr = std::make_shared<eth_balance_db_t>(
+        std::getenv("DB_URL"), std::getenv("DB_USER_NAME"),
+        std::getenv("DB_PASSWORD"), std::getenv("ETH_DB"));
+
+    resp_ptr = ptr->aql_query(
+        "for item in balance sort item.date desc limit 1 return item.date", 1);
+  }
 
   auto date_doc = resp_ptr->slices().front().get("result");
   if (date_doc.isNone() || date_doc.isEmptyArray()) {
@@ -221,7 +235,11 @@ time_t get_eth_balance_db_start_ts() {
   LOG(INFO) << pt_str;
   boost::posix_time::ptime pt = boost::posix_time::time_from_string(pt_str);
   time_t tt = boost::posix_time::to_time_t(pt);
-  return tt + 2 * 24 * 3600;
+  // next day
+  time_t next_tt = tt + 24 * 3600;
+  // next day end timestamp, input as start_ts for write_to_balance_db
+  time_t next_tt_end = next_tt + 24 * 3600;
+  return next_tt_end;
 }
 
 int main(int argc, char *argv[]) {
@@ -239,7 +257,7 @@ int main(int argc, char *argv[]) {
 
   time_t seconds_of_day = 24 * 60 * 60;
 
-  start_ts = get_eth_balance_db_start_ts();
+  start_ts = get_balance_db_start_ts(chain);
 
   for (time_t ts = start_ts; ts < end_ts; ts += seconds_of_day) {
     write_to_balance_db(tdb_ptr, adb_ptr, bdb_ptr, ts, parallel);
