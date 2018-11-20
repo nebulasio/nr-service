@@ -2,48 +2,9 @@
 add_executable(main main.cpp)
 target_link_libraries(main ${common_libs} gflags)
 
-add_executable(ntobject ntobject.cpp)
-target_link_libraries(ntobject ${common_libs} gflags)
-
-add_executable(blockchain blockchain.cpp)
-target_link_libraries(blockchain ${common_libs} gflags)
-
-add_executable(transaction_writer transaction_writer.cpp)
-target_link_libraries(transaction_writer ${common_libs} gflags)
-
-add_executable(account_writer account_writer.cpp)
-target_link_libraries(account_writer ${common_libs} gflags)
-
-add_executable(nr nr.cpp)
-target_link_libraries(nr ${common_libs} gflags)
-
-add_executable(base58 base58.cpp)
-target_link_libraries(base58 ${common_libs} gflags)
-
-add_executable(eth_api eth_api.cpp)
-target_link_libraries(eth_api ${common_libs} gflags)
-
-add_executable(lru_cache lru_cache.cpp)
-target_link_libraries(lru_cache ${common_libs} gflags)
-
-add_executable(eth_transaction_writer eth_transaction_writer.cpp)
-target_link_libraries(eth_transaction_writer ${common_libs} gflags)
-
-add_executable(eth_account_writer eth_account_writer.cpp)
-target_link_libraries(eth_account_writer ${common_libs} gflags)
-
-add_executable(statistics statistics.cpp)
-target_link_libraries(statistics ${common_libs} gflags)
-
-add_executable(monitor exchanges_monitor.cpp)
-target_link_libraries(monitor ${common_libs} gflags)
-
-add_executable(balance_writer balance_writer.cpp)
-target_link_libraries(balance_writer ${common_libs} gflags)
-
-add_executable(nr_writer nr_writer.cpp)
-target_link_libraries(nr_writer ${common_libs} gflags)
-
-add_executable(graph graph.cpp)
-target_link_libraries(graph ${common_libs} gflags)
-
+add_subdirectory(account)
+add_subdirectory(balance)
+add_subdirectory(nr)
+add_subdirectory(statistics)
+add_subdirectory(test)
+add_subdirectory(transaction)
