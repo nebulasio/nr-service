@@ -57,6 +57,9 @@ std::string time_utils::fill_prefix_zero(int number, int digit) {
 
 /*
  * convert ptime (contruct from string) in local time to ptime in utc time
+ *
+ * @input - ptime string (2018-01-01 00:00:00)
+ * @output - ptime object
  * */
 boost::posix_time::ptime
 time_utils::ptime_str_to_ptime(const std::string &ptime_str) {
@@ -70,6 +73,10 @@ time_utils::ptime_str_to_ptime(const std::string &ptime_str) {
   return cn_eastern::local_to_utc(time_local);
 }
 
+/*
+ * @input - ptime string
+ * @output - timestamp in seconds
+ * */
 time_t time_utils::ptime_str_to_time_t(const std::string &ptime_str) {
   boost::posix_time::ptime time_utc = ptime_str_to_ptime(ptime_str);
   return boost::posix_time::to_time_t(time_utc);
@@ -93,6 +100,10 @@ time_utils::replace_month_str_to_month_of_year(std::string &simple_str) {
   return std::string();
 }
 
+/*
+ * @input - ptime string in local time
+ * @output - ptime string in global time (utc)
+ * */
 std::string time_utils::ptime_str_local_to_ptime_str_utc(
     const std::string &ptime_str_local) {
   boost::posix_time::ptime time_utc = ptime_str_to_ptime(ptime_str_local);
