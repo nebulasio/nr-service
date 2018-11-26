@@ -52,21 +52,23 @@ void write_date_nr(const db_ptr_set_t db_ptr_set, const std::string &date,
   neb::rank_params_t rp{2000.0, 200000.0, 100.0, 1000.0, 0.75, 3.14};
   neb::nebulas_rank nr(tdb_ptr, adb_ptr, rp, start_block, end_block);
 
-  // account inter transactions
-  auto it_account_inter_txs =
-      tdb_ptr->read_inter_transaction_from_db_with_duration(start_block,
-                                                            end_block);
-  auto account_inter_txs = *it_account_inter_txs;
-  LOG(INFO) << "account to account: " << account_inter_txs.size();
-
-  // graph
-  auto it_txs_v = nr.split_transactions_by_x_block_interval(account_inter_txs);
-  auto txs_v = *it_txs_v;
-
-  neb::transaction_graph_ptr_t tg = std::make_shared<neb::transaction_graph>();
-
-  std::string filename = "../cache/" + chain + '-' + date + ".dot";
+  std::string filename = "./cache/" + chain + '-' + date + ".dot";
   if (!exists(filename)) {
+    // account inter transactions
+    auto it_account_inter_txs =
+        tdb_ptr->read_inter_transaction_from_db_with_duration(start_block,
+                                                              end_block);
+    auto account_inter_txs = *it_account_inter_txs;
+    LOG(INFO) << "account to account: " << account_inter_txs.size();
+
+    // graph
+    auto it_txs_v =
+        nr.split_transactions_by_x_block_interval(account_inter_txs);
+    auto txs_v = *it_txs_v;
+
+    neb::transaction_graph_ptr_t tg =
+        std::make_shared<neb::transaction_graph>();
+
     // cache remove cycles result
     nr.filter_empty_transactions_this_interval(txs_v);
     std::vector<neb::transaction_graph_ptr_t> tgs =
@@ -199,6 +201,23 @@ void para_run(const db_ptr_set_t db_ptr_set, time_t end_ts,
                    .count();
 }
 
+time_t get_start_ts_for_cache_dot_dir(const std::string &chain,
+                                      int32_t start_ts) {
+  time_t ts = start_ts;
+  std::string date = neb::time_utils::time_t_to_date(ts);
+  std::string filename =
+      boost::str(boost::format("./cache/%1%-%2%.dot") % chain % date);
+
+  while (exists(filename)) {
+    ts += 24 * 3600;
+    date = neb::time_utils::time_t_to_date(ts);
+    LOG(INFO) << date;
+    filename = boost::str(boost::format("./cache/%1%-%2%.dot") % chain % date);
+  }
+
+  return ts + 24 * 3600;
+}
+
 int main(int argc, char *argv[]) {
   gflags::ParseCommandLineFlags(&argc, &argv, true);
   std::string chain = FLAGS_chain;
@@ -208,6 +227,8 @@ int main(int argc, char *argv[]) {
 
   db_ptr_set_t db_ptr_set = get_db_ptr_set(chain);
   time_t seconds_of_day = 24 * 60 * 60;
+
+  start_ts = get_start_ts_for_cache_dot_dir(chain, start_ts);
 
   for (time_t ts = start_ts; ts < end_ts;
        ts += (seconds_of_day * thread_nums)) {
