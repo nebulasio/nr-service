@@ -27,6 +27,7 @@ class time_utils : public utils {
 public:
   static time_t get_universal_timestamp();
   static std::string time_t_to_date(time_t t);
+  static time_t date_to_time_t(const std::string &date);
 
 private:
   static std::string fill_prefix_zero(int number, int digit);

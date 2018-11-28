@@ -128,6 +128,16 @@ std::string time_utils::time_t_to_date(time_t t) {
   return replace_month_str_to_month_of_year(s);
 }
 
+time_t time_utils::date_to_time_t(const std::string &date) {
+  assert(date.size() == 8 && string_utils::is_number(date));
+  std::string year = date.substr(0, 4);
+  std::string month = date.substr(4, 2);
+  std::string day = date.substr(6);
+  std::string pt_str =
+      boost::str(boost::format("%1%-%2%-%3% 00:00:00") % year % month % day);
+  return ptime_str_to_time_t(pt_str);
+}
+
 std::string string_utils::to_dec(const std::string &hex_str) {
   std::stringstream ss;
   ss << std::hex << hex_str;
