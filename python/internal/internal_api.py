@@ -33,7 +33,14 @@ def api_nebulas_transaction():
     if 'batch_size' in request.args:
         batch_size = int(request.args['batch_size'])
 
-    return api_transaction.get_transactions_by_address(dbname, batch_size, address)
+    start_ts = str()
+    end_ts = str()
+
+    if 'start_ts' in request.args and 'end_ts' in request.args:
+        start_ts = str(request.args['start_ts'])
+        end_ts = str(request.args['end_ts'])
+
+    return api_transaction.get_transactions_by_address(dbname, batch_size, address, start_ts, end_ts)
 
 
 @app.route('/nr')
