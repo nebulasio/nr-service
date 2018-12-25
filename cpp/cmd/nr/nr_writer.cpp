@@ -6,6 +6,7 @@ DEFINE_string(chain, "nebulas", "chain name, nebulas or eth");
 DEFINE_int32(start_ts, 0, "the first day end timestamp");
 DEFINE_int32(end_ts, 1, "the last day end timestamp");
 DEFINE_int32(thread_nums, 1, "the number of thread");
+DEFINE_bool(auto_start, true, "using auto start timestamp");
 
 typedef neb::transaction_db_interface transaction_db_t;
 typedef std::shared_ptr<transaction_db_t> tdb_ptr_t;
@@ -332,11 +333,14 @@ int main(int argc, char *argv[]) {
   int32_t start_ts = FLAGS_start_ts;
   int32_t end_ts = FLAGS_end_ts;
   int32_t thread_nums = FLAGS_thread_nums;
+  bool auto_start = FLAGS_auto_start;
 
   db_ptr_set_t db_ptr_set = get_db_ptr_set(chain);
   time_t seconds_of_day = 24 * 60 * 60;
 
-  start_ts = get_nr_db_start_ts(chain);
+  if (auto_start) {
+    start_ts = get_nr_db_start_ts(chain);
+  }
 
   for (time_t ts = start_ts; ts < end_ts;
        ts += (seconds_of_day * thread_nums)) {

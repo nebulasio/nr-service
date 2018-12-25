@@ -71,6 +71,57 @@ block_info_t get_start_and_end_block(tdb_ptr_t tdb_ptr, time_t end_ts) {
   return info;
 }
 
+void divide_address_set(
+    const std::unordered_map<std::string, std::string> &addr_and_type,
+    size_t parallel,
+    std::vector<std::unordered_map<std::string, std::string>> &addr_type_list) {
+
+  size_t interval = addr_and_type.size() / parallel;
+  std::unordered_map<std::string, std::string> tmp;
+
+  for (auto &addr : addr_and_type) {
+    tmp.insert(std::make_pair(addr.first, addr.second));
+    if (tmp.size() == interval) {
+      addr_type_list.push_back(tmp);
+      tmp.clear();
+    }
+  }
+  if (!addr_type_list.empty()) {
+    auto &last = addr_type_list.back();
+    for (auto &it_tmp : tmp) {
+      last.insert(std::make_pair(it_tmp.first, it_tmp.second));
+    }
+  }
+}
+
+void get_address_parallel(
+    const std::vector<std::unordered_map<std::string, std::string>>
+        &addr_type_list,
+    adb_ptr_t adb_ptr, neb::block_height_t block_height,
+    std::unordered_map<std::string, std::string> &addr_and_balance) {
+
+  std::vector<std::thread> tv;
+  std::mutex lock;
+
+  for (size_t i = 0; i < addr_type_list.size(); i++) {
+    std::thread t([&, i]() {
+      std::unordered_map<std::string, std::string> tmp;
+      for (auto &addr : addr_type_list[i]) {
+        std::string balance = adb_ptr->get_address_balance(
+            addr.first, std::to_string(block_height));
+        tmp.insert(std::make_pair(addr.first, balance));
+      }
+      std::lock_guard<std::mutex> lg(lock);
+      addr_and_balance.insert(tmp.begin(), tmp.end());
+    });
+    tv.push_back(std::move(t));
+  }
+
+  for (auto &t : tv) {
+    t.join();
+  }
+}
+
 void write_date_balance(tdb_ptr_t tdb_ptr, adb_ptr_t adb_ptr, bdb_ptr_t bdb_ptr,
                         const block_info_t &block_info) {
   auto start_block = block_info.start_block;
@@ -94,15 +145,19 @@ void write_date_balance(tdb_ptr_t tdb_ptr, adb_ptr_t adb_ptr, bdb_ptr_t bdb_ptr,
   }
   LOG(INFO) << "account set size: " << addr_and_type.size();
 
+  std::vector<std::unordered_map<std::string, std::string>> addr_type_list;
+  divide_address_set(addr_and_type, 10, addr_type_list);
+
+  std::unordered_map<std::string, std::string> addr_and_balance;
+  get_address_parallel(addr_type_list, adb_ptr, start_block, addr_and_balance);
+
   std::vector<neb::balance_info_t> rs;
-  for (auto &addr : addr_and_type) {
-    std::string balance =
-        adb_ptr->get_address_balance(addr.first, std::to_string(start_block));
-    std::string type = addr.second;
+  for (auto &addr : addr_and_balance) {
+    std::string balance = addr.second;
 
     neb::balance_info_t info;
     info.template set<::neb::date, ::neb::address, ::neb::balance,
-                      ::neb::account_type>(date, addr.first, balance, type);
+                      ::neb::account_type>(date, addr.first, balance, "normal");
     rs.push_back(info);
   }
 

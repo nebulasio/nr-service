@@ -5,7 +5,8 @@
 DEFINE_string(chain, "nebulas", "chain name, nebulas or eth");
 DEFINE_int32(start_ts, 0, "the first day end timestamp");
 DEFINE_int32(end_ts, 1, "the last day end timestamp");
-DEFINE_int32(parallel, 1, "parallel thread numbers");
+DEFINE_int32(thread_nums, 1, "parallel thread numbers");
+DEFINE_bool(auto_start, true, "using auto start timestamp");
 
 typedef neb::transaction_db_interface transaction_db_t;
 typedef std::shared_ptr<transaction_db_t> tdb_ptr_t;
@@ -96,7 +97,6 @@ void write_date_balance(tdb_ptr_t tdb_ptr, adb_ptr_t adb_ptr, bdb_ptr_t bdb_ptr,
 
   std::vector<std::unordered_map<std::string, std::string>> addr_type_list;
   divide_address_set(addr_and_type, parallel, addr_type_list);
-  assert(parallel == addr_type_list.size());
 
   std::unordered_map<std::string, std::string> addr_and_balance;
   get_address_parallel(addr_type_list, adb_ptr, start_block, addr_and_balance);
@@ -248,7 +248,8 @@ int main(int argc, char *argv[]) {
   std::string chain = FLAGS_chain;
   int32_t start_ts = FLAGS_start_ts;
   int32_t end_ts = FLAGS_end_ts;
-  size_t parallel = FLAGS_parallel;
+  size_t thread_nums = FLAGS_thread_nums;
+  bool auto_start = FLAGS_auto_start;
 
   db_ptr_set_t db_ptr_set = get_db_ptr_set(chain);
   tdb_ptr_t tdb_ptr = db_ptr_set.tdb_ptr;
@@ -257,10 +258,12 @@ int main(int argc, char *argv[]) {
 
   time_t seconds_of_day = 24 * 60 * 60;
 
-  start_ts = get_balance_db_start_ts(chain);
+  if (auto_start) {
+    start_ts = get_balance_db_start_ts(chain);
+  }
 
   for (time_t ts = start_ts; ts < end_ts; ts += seconds_of_day) {
-    write_to_balance_db(tdb_ptr, adb_ptr, bdb_ptr, ts, parallel);
+    write_to_balance_db(tdb_ptr, adb_ptr, bdb_ptr, ts, thread_nums);
   }
   return 0;
 }

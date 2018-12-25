@@ -7,7 +7,7 @@ DEFINE_int64(start_block, 0, "starting block height");
 DEFINE_int64(end_block, 0, "ending block height");
 DEFINE_int64(block_interval, 0, "block interval");
 DEFINE_int32(thread_nums, 1, "the number of thread");
-
+DEFINE_bool(auto_run, false, "run with append transactions");
 
 typedef neb::eth::eth_transaction_db eth_transaction_db_t;
 typedef std::shared_ptr<eth_transaction_db_t> eth_transaction_db_ptr_t;
@@ -50,10 +50,16 @@ int main(int argc, char *argv[]) {
   neb::block_height_t end_block = FLAGS_end_block;
   neb::block_height_t block_interval = FLAGS_block_interval;
   int32_t thread_nums = FLAGS_thread_nums;
+  bool auto_run = FLAGS_auto_run;
 
   eth_transaction_db_ptr_t tx_ptr = std::make_shared<eth_transaction_db_t>(
       std::getenv("DB_URL"), std::getenv("DB_USER_NAME"),
       std::getenv("DB_PASSWORD"), std::getenv("ETH_DB"));
+
+  if (auto_run) {
+    tx_ptr->append_transactions();
+    return 0;
+  }
 
   while (start_block < end_block) {
     int32_t s = start_block;
