@@ -103,19 +103,20 @@ void eth_transaction_db::insert_transactions_to_db(block_height_t start_block,
                                                    block_height_t end_block) {
   for (int h = start_block; h < end_block; h++) {
 
-    LOG(INFO) << h;
+    // LOG(INFO) << h;
 
     auto it_txs = eth_api::get_block_transactions_by_height(h);
     auto txs = *it_txs;
-    LOG(INFO) << "get block transactions by height done, size: " << txs.size();
+    // LOG(INFO) << "get block transactions by height done, size: " <<
+    // txs.size();
     auto it_internal_txs = eth_api::trace_block(h);
     auto internal_txs = *it_internal_txs;
     LOG(INFO) << h << " ,trace block done, size: " << internal_txs.size();
 
     set_transactions(txs, internal_txs);
-    LOG(INFO) << "cached address size: " << m_addr_and_type.size();
+    // LOG(INFO) << "cached address size: " << m_addr_and_type.size();
     insert_block_transactions(internal_txs);
-    LOG(INFO) << "insert block transactions done";
+    // LOG(INFO) << "insert block transactions done";
   }
 }
 
@@ -179,6 +180,44 @@ void eth_transaction_db::set_transactions(
 
 void eth_transaction_db::clean_transaction_db() {
   aql_query("for tx in transaction remove tx in transaction");
+}
+
+void eth_transaction_db::append_transactions() {
+
+  auto f_check_failed_flag = [](const std::string &p) -> bool {
+    if (!boost::filesystem::exists(boost::filesystem::path(p))) {
+      return false;
+    }
+
+    std::ifstream ifs;
+    ifs.open(p, std::ios::in | std::ios::binary);
+    std::string failed_flag;
+    ifs >> failed_flag;
+    ifs.close();
+
+    if (failed_flag.compare("true") == 0) {
+      return true;
+    }
+    return false;
+  };
+  auto f_set_failed_flag = [](const std::string &p,
+                              const std::string &failed_flag) {
+    std::ofstream ofs;
+    ofs.open(p, std::ios::out | std::ios::binary);
+    ofs << failed_flag;
+    ofs.close();
+  };
+  std::string failed_flag_path = std::string("failed_flag");
+
+  block_height_t last_height = get_max_height_from_db();
+  if (f_check_failed_flag(failed_flag_path) == true) {
+    remove_transactions_this_block_height(last_height--);
+  }
+  block_height_t current_height = eth_api::get_block_height();
+
+  f_set_failed_flag(failed_flag_path, std::string("true"));
+  insert_transactions_to_db(last_height + 1, current_height);
+  f_set_failed_flag(failed_flag_path, std::string("false"));
 }
 
 } // namespace eth

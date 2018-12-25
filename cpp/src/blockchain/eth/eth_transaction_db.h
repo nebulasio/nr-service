@@ -14,6 +14,8 @@ public:
                                  block_height_t end_block);
   void clean_transaction_db();
 
+  void append_transactions();
+
   block_height_t get_max_height_from_db();
   void remove_transactions_this_block_height(block_height_t height);
 
