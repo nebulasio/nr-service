@@ -37,12 +37,11 @@ block_info_t get_start_and_end_block(tdb_ptr_t tdb_ptr, time_t end_ts) {
 
   block_info_t info;
   time_t seconds_of_day = 24 * 60 * 60;
-  time_t seconds_of_ten_minute = 10 * 60;
+  time_t seconds_of_duration = 10 * 60;
 
   auto it_txs_in_end_last_minute =
       tdb_ptr->read_success_and_failed_transaction_from_db_with_ts_duration(
-          std::to_string(end_ts - seconds_of_ten_minute),
-          std::to_string(end_ts));
+          std::to_string(end_ts - seconds_of_duration), std::to_string(end_ts));
   auto txs_in_end_last_minute = *it_txs_in_end_last_minute;
   if (txs_in_end_last_minute.empty()) {
     LOG(INFO) << "no transactions in end timestamp of last minute";
@@ -54,7 +53,7 @@ block_info_t get_start_and_end_block(tdb_ptr_t tdb_ptr, time_t end_ts) {
   time_t start_ts = end_ts - seconds_of_day;
   auto it_txs_in_start_last_minute =
       tdb_ptr->read_success_and_failed_transaction_from_db_with_ts_duration(
-          std::to_string(start_ts - seconds_of_ten_minute),
+          std::to_string(start_ts - seconds_of_duration),
           std::to_string(start_ts));
   auto txs_in_start_last_minute = *it_txs_in_start_last_minute;
   if (txs_in_start_last_minute.empty()) {
