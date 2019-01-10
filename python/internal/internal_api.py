@@ -13,6 +13,7 @@ from flask_restful import Resource, Api
 import api_transaction
 import api_nr
 import api_cursor
+import api_keyset
 
 
 app = Flask(__name__)
@@ -71,6 +72,26 @@ def api_nebulas_nr():
         return api_nr.get_nr_by_address(dbname, batch_size, address, collection)
 
     return str()
+
+
+@app.route('/keyset')
+def api_nebulas_key():
+    if 'db' not in request.args:
+        return str()
+    if 'collection' not in request.args:
+        return str()
+    if 'field' not in request.args:
+        return str()
+
+    dbname = str(request.args['db'])
+    collection = str(request.args['collection'])
+    field = str(request.args['field'])
+
+    batch_size = 1 << 8
+    if 'batch_size' in request.args:
+        batch_size = int(request.args['batch_size'])
+
+    return api_keyset.get_keys(dbname, collection, batch_size, field)
 
 
 @app.route('/cursor')
