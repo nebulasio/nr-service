@@ -55,16 +55,20 @@ def api_nebulas_nr():
     if 'batch_size' in request.args:
         batch_size = int(request.args['batch_size'])
 
+    collection = 'nr'
+    if 'collection' in request.args:
+        collection = str(request.args['collection'])
+
     if 'date' in request.args and 'address' in request.args:
         date = str(request.args['date'])
         address = str(request.args['address'])
-        return api_nr.get_nr_by_date_address(dbname, batch_size, date, address)
+        return api_nr.get_nr_by_date_address(dbname, batch_size, date, address, collection)
     elif 'date' in request.args:
         date = str(request.args['date'])
-        return api_nr.get_nr_by_date(dbname, batch_size, date)
+        return api_nr.get_nr_by_date(dbname, batch_size, date, collection)
     elif 'address' in request.args:
         address = str(request.args['address'])
-        return api_nr.get_nr_by_address(dbname, batch_size, address)
+        return api_nr.get_nr_by_address(dbname, batch_size, address, collection)
 
     return str()
 
