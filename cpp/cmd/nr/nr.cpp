@@ -37,31 +37,29 @@ block_info_t get_start_and_end_block(tdb_ptr_t tdb_ptr, time_t end_ts) {
 
   block_info_t info;
   time_t seconds_of_day = 24 * 60 * 60;
-  time_t seconds_of_duration = 10 * 60;
 
-  auto it_txs_in_end_last_minute =
+  auto it_txs_in_end_last_day =
       tdb_ptr->read_success_and_failed_transaction_from_db_with_ts_duration(
-          std::to_string(end_ts - seconds_of_duration), std::to_string(end_ts));
-  auto txs_in_end_last_minute = *it_txs_in_end_last_minute;
-  if (txs_in_end_last_minute.empty()) {
-    LOG(INFO) << "no transactions in end timestamp of last minute";
+          std::to_string(end_ts - seconds_of_day), std::to_string(end_ts));
+  auto txs_in_end_last_day = *it_txs_in_end_last_day;
+  if (txs_in_end_last_day.empty()) {
+    LOG(INFO) << "no transactions in end timestamp of last day";
     return info;
   }
   neb::block_height_t end_block =
-      txs_in_end_last_minute.back().template get<::neb::height>();
+      txs_in_end_last_day.back().template get<::neb::height>();
 
   time_t start_ts = end_ts - seconds_of_day;
-  auto it_txs_in_start_last_minute =
+  auto it_txs_in_start_last_day =
       tdb_ptr->read_success_and_failed_transaction_from_db_with_ts_duration(
-          std::to_string(start_ts - seconds_of_duration),
-          std::to_string(start_ts));
-  auto txs_in_start_last_minute = *it_txs_in_start_last_minute;
-  if (txs_in_start_last_minute.empty()) {
-    LOG(INFO) << "no transactions in start timestamp of last minute";
+          std::to_string(start_ts - seconds_of_day), std::to_string(start_ts));
+  auto txs_in_start_last_day = *it_txs_in_start_last_day;
+  if (txs_in_start_last_day.empty()) {
+    LOG(INFO) << "no transactions in start timestamp of last day";
     return info;
   }
   neb::block_height_t start_block =
-      txs_in_start_last_minute.back().template get<::neb::height>();
+      txs_in_start_last_day.back().template get<::neb::height>();
 
   std::string date = neb::time_utils::time_t_to_date(start_ts);
   LOG(INFO) << date << ',' << start_block << ',' << end_block;
