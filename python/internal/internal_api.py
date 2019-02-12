@@ -14,6 +14,7 @@ import api_transaction
 import api_nr
 import api_cursor
 import api_keyset
+import api_account
 
 
 app = Flask(__name__)
@@ -21,7 +22,7 @@ api = Api(app)
 
 
 @app.route('/transaction')
-def api_nebulas_transaction():
+def api_route_transaction():
     if 'address' not in request.args:
         return str()
     if 'db' not in request.args:
@@ -44,8 +45,26 @@ def api_nebulas_transaction():
     return api_transaction.get_transactions_by_address(dbname, batch_size, address, start_ts, end_ts)
 
 
+@app.route('/account')
+def api_route_account():
+    if 'db' not in request.args:
+        return str()
+
+    dbname = str(request.args['db'])
+
+    batch_size = 1 << 8
+    if 'batch_size' in request.args:
+        batch_size = int(request.args['batch_size'])
+
+    account_type = 'normal'
+    if 'account_type' in request.args:
+        account_type = str(request.args['account_type'])
+
+    return api_account.get_accounts(dbname, account_type, batch_size)
+
+
 @app.route('/nr')
-def api_nebulas_nr():
+def api_route_nr():
     if 'db' not in request.args:
         return str()
     if 'date' not in request.args and 'address' not in request.args:
@@ -75,7 +94,7 @@ def api_nebulas_nr():
 
 
 @app.route('/keyset')
-def api_nebulas_key():
+def api_route_key():
     if 'db' not in request.args:
         return str()
     if 'collection' not in request.args:
@@ -95,7 +114,7 @@ def api_nebulas_key():
 
 
 @app.route('/cursor')
-def api_nebulas_cursor():
+def api_route_cursor():
     if 'db' not in request.args:
         return str()
     if 'id' not in request.args:
