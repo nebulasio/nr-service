@@ -199,7 +199,8 @@ void nebulas_account_db::append_account_to_db() {
 
     int32_t ret_type = nebulas_api::is_contract_address(address);
     if (ret_type == -1) {
-      return;
+      LOG(INFO) << "parse address failed";
+      continue;
     }
     std::string type = (ret_type == 0 ? "normal" : "contract");
 
