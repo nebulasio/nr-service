@@ -23,17 +23,18 @@ api = Api(app)
 
 @app.route('/transaction')
 def api_route_transaction():
-    if 'address' not in request.args:
-        return str()
     if 'db' not in request.args:
         return str()
 
-    address = str(request.args['address'])
     dbname = str(request.args['db'])
     batch_size = 1 << 8
 
     if 'batch_size' in request.args:
         batch_size = int(request.args['batch_size'])
+
+    address = str()
+    if 'address' in request.args:
+        address = str(request.args['address'])
 
     start_ts = str()
     end_ts = str()
@@ -42,7 +43,7 @@ def api_route_transaction():
         start_ts = str(request.args['start_ts'])
         end_ts = str(request.args['end_ts'])
 
-    return api_transaction.get_transactions_by_address(dbname, batch_size, address, start_ts, end_ts)
+    return api_transaction.get_transactions(dbname, batch_size, address, start_ts, end_ts)
 
 
 @app.route('/account')

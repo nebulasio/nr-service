@@ -11,7 +11,7 @@ import json
 from db_conf import db_client
 
 
-def get_transactions_by_address(dbname, batch_size, address, start_ts, end_ts, limit=1<<15):
+def get_transactions(dbname, batch_size, address, start_ts, end_ts, limit=1<<15):
     '''
     @dbname - nebulas or ethereum database name
     @batch_size - batch of result size
@@ -27,13 +27,15 @@ def get_transactions_by_address(dbname, batch_size, address, start_ts, end_ts, l
     assert isinstance(start_ts, str)
     assert isinstance(end_ts, str)
 
-    aql = '''for tx in transaction filter tx.from=='%s' or
-            tx.to=='%s' limit %s return tx''' % (address, address, limit)
+    aql = '''for tx in transaction'''
+
+    if address:
+        aql = '''%s filter tx.from=='%s' or tx.to=='%s' ''' % (aql, address, address)
 
     if start_ts and end_ts:
-        aql = '''for tx in transaction filter tx.from=='%s' or tx.to=='%s' limit %s\
-                    filter tx.timestamp>='%s' and tx.timestamp<'%s' return tx'''\
-                    % (address, address, limit, start_ts, end_ts)
+        aql = '''%s filter tx.timestamp>='%s' and tx.timestamp<'%s' ''' % (aql, start_ts, end_ts)
+
+    aql = '''%s limit %s return tx''' % (aql, limit)
 
     cursor = db_client[dbname].aql.execute(aql, batch_size=batch_size, ttl=60)
     d = {
@@ -45,7 +47,7 @@ def get_transactions_by_address(dbname, batch_size, address, start_ts, end_ts, l
 
 
 def main():
-    ret = get_transactions_by_address('nebulas', 5, 'n1Wt2VbPAR6TttM17HQXscCyWBrFe36HeYC')
+    ret = get_transactions('nebulas', 5, 'n1Wt2VbPAR6TttM17HQXscCyWBrFe36HeYC')
     print ret
 
 
