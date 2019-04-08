@@ -183,6 +183,13 @@ public:
           read_success_and_failed_transaction_from_db_with_ts_duration_sharding(
               s, e);
       ret.insert(ret.end(), v->begin(), v->end());
+
+      LOG(INFO) << boost::str(
+          boost::format("for timestamp interval [%1%, %2%] done timestamp %3%, "
+                        "(%4% percent)") %
+          start_ts % end_ts % e %
+          ((std::stoll(e) - std::stoll(start_ts)) * 100 /
+           (std::stoll(end_ts) - std::stoll(start_ts))));
     }
     return std::make_shared<std::vector<transaction_info_t>>(ret);
   }

@@ -23,9 +23,10 @@ typedef typename nr_table_t::row_type nr_info_t;
 
 class nr_db_interface {
 public:
-  virtual void insert_date_nrs(const std::vector<nr_info_t> &infos) = 0;
+  virtual void insert_date_nrs(const std::vector<nr_info_t> &infos,
+                               const std::string &collection) = 0;
   virtual std::shared_ptr<std::vector<nr_info_t>>
-  read_nr_by_date(const std::string &date) = 0;
+  read_nr_by_date(const std::string &date, const std::string &collection) = 0;
   virtual std::string nr_infos_to_string(const std::vector<nr_info_t> &rs) = 0;
 };
 
@@ -85,11 +86,14 @@ public:
         const std::string &passwd, const std::string &dbname)
       : db<DB, nr_db_info_setter>(url, usrname, passwd, dbname) {}
 
-  virtual void insert_date_nrs(const std::vector<nr_info_t> &infos) {
+  virtual void insert_date_nrs(const std::vector<nr_info_t> &infos,
+                               const std::string &collection) {
+
+    std::string req = boost::str(boost::format("/_db/%1%/_api/document/%2%") %
+                                 this->m_dbname % collection);
 
     auto request = ::arangodb::fuerte::createRequest(
-        ::arangodb::fuerte::RestVerb::Post,
-        "/_db/" + this->m_dbname + "/_api/document/nr");
+        ::arangodb::fuerte::RestVerb::Post, req);
 
     VPackBuilder builder_arr;
     builder_arr.openArray();
@@ -100,8 +104,7 @@ public:
 
       if (i > 0 && i % payload_size == 0) {
         auto request = ::arangodb::fuerte::createRequest(
-            ::arangodb::fuerte::RestVerb::Post,
-            "/_db/" + this->m_dbname + "/_api/document/nr");
+            ::arangodb::fuerte::RestVerb::Post, req);
 
         // send request with array length payload_size
         builder_arr.close();
@@ -127,10 +130,10 @@ public:
   }
 
   virtual std::shared_ptr<std::vector<nr_info_t>>
-  read_nr_by_date(const std::string &date) {
+  read_nr_by_date(const std::string &date, const std::string &collection) {
     const std::string aql = boost::str(
-        boost::format("for item in nr filter item.date=='%1%' return item") %
-        date);
+        boost::format("for item in %1% filter item.date=='%2%' return item") %
+        collection % date);
     return this->aql_query_with_batch(aql);
     // auto resp_ptr = this->aql_query(aql);
 

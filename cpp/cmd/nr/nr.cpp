@@ -159,7 +159,7 @@ void write_date_balance(tdb_ptr_t tdb_ptr, adb_ptr_t adb_ptr, bdb_ptr_t bdb_ptr,
   }
 
   LOG(INFO) << "insert balance db begin...";
-  bdb_ptr->insert_date_balances(rs);
+  bdb_ptr->insert_date_balances(rs, "balance");
   LOG(INFO) << "insert balance db done";
 }
 
@@ -212,7 +212,7 @@ void write_date_nr(const tdb_ptr_t tdb_ptr, const adb_ptr_t adb_ptr,
 
   std::unordered_map<neb::account_address_t, neb::account_balance_t>
       addr_balance;
-  auto it_date_balance = bdb_ptr->read_balance_by_date(date);
+  auto it_date_balance = bdb_ptr->read_balance_by_date(date, "balance");
   auto date_balance = *it_date_balance;
   LOG(INFO) << "for date " << date << ", size: " << date_balance.size();
   for (auto &it : date_balance) {
@@ -283,7 +283,7 @@ void write_date_nr(const tdb_ptr_t tdb_ptr, const adb_ptr_t adb_ptr,
     infos.push_back(info);
   }
   LOG(INFO) << "insert to db begin...";
-  ndb_ptr->insert_date_nrs(infos);
+  ndb_ptr->insert_date_nrs(infos, "nr");
   LOG(INFO) << "insert to db done";
 }
 

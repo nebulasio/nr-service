@@ -6,7 +6,6 @@ DEFINE_string(chain, "nebulas", "chain name, nebulas or eth");
 DEFINE_int32(start_ts, 0, "the first day end timestamp");
 DEFINE_int32(end_ts, 1, "the last day end timestamp");
 DEFINE_int32(thread_nums, 1, "parallel thread numbers");
-DEFINE_bool(auto_start, true, "using auto start timestamp");
 
 typedef neb::transaction_db_interface transaction_db_t;
 typedef std::shared_ptr<transaction_db_t> tdb_ptr_t;
@@ -114,7 +113,7 @@ void write_date_balance(tdb_ptr_t tdb_ptr, adb_ptr_t adb_ptr, bdb_ptr_t bdb_ptr,
   }
 
   LOG(INFO) << "insert balance db begin...";
-  bdb_ptr->insert_date_balances(rs, "balance");
+  bdb_ptr->insert_date_balances(rs, "balance_week");
   LOG(INFO) << "insert balance db done";
 }
 
@@ -134,7 +133,8 @@ void write_to_balance_db(tdb_ptr_t tdb_ptr, adb_ptr_t adb_ptr,
   neb::block_height_t end_block =
       txs_in_end_last_day.back().template get<::neb::height>();
 
-  time_t start_ts = end_ts - seconds_of_day;
+  int32_t days = 7;
+  time_t start_ts = end_ts - seconds_of_day * days;
   auto it_txs_in_start_last_day =
       tdb_ptr->read_success_and_failed_transaction_from_db_with_ts_duration(
           std::to_string(start_ts - seconds_of_day), std::to_string(start_ts));
@@ -146,7 +146,9 @@ void write_to_balance_db(tdb_ptr_t tdb_ptr, adb_ptr_t adb_ptr,
   neb::block_height_t start_block =
       txs_in_start_last_day.back().template get<::neb::height>();
 
-  std::string date = neb::time_utils::time_t_to_date(start_ts);
+  std::string start_date = neb::time_utils::time_t_to_date(start_ts);
+  std::string end_date = neb::time_utils::time_t_to_date(end_ts);
+  std::string date = start_date + '-' + end_date;
   LOG(INFO) << date << ',' << start_block << ',' << end_block;
   write_date_balance(tdb_ptr, adb_ptr, bdb_ptr, date, start_block, end_block,
                      parallel);
@@ -195,50 +197,6 @@ db_ptr_set_t get_db_ptr_set(const std::string &chain) {
   return db_ptr_set_t{tdb_ptr, adb_ptr, bdb_ptr};
 }
 
-time_t get_balance_db_start_ts(const std::string &chain) {
-
-  assert(chain.compare("nebulas") == 0 || chain.compare("eth") == 0);
-  std::unique_ptr<::arangodb::fuerte::Response> resp_ptr;
-
-  if (chain.compare("nebulas") == 0) {
-    std::shared_ptr<nebulas_balance_db_t> ptr =
-        std::make_shared<nebulas_balance_db_t>(
-            std::getenv("DB_URL"), std::getenv("DB_USER_NAME"),
-            std::getenv("DB_PASSWORD"), std::getenv("NEBULAS_DB"));
-
-    resp_ptr = ptr->aql_query(
-        "for item in balance sort item.date desc limit 1 return item.date", 1);
-
-  } else {
-    std::shared_ptr<eth_balance_db_t> ptr = std::make_shared<eth_balance_db_t>(
-        std::getenv("DB_URL"), std::getenv("DB_USER_NAME"),
-        std::getenv("DB_PASSWORD"), std::getenv("ETH_DB"));
-
-    resp_ptr = ptr->aql_query(
-        "for item in balance sort item.date desc limit 1 return item.date", 1);
-  }
-
-  auto date_doc = resp_ptr->slices().front().get("result");
-  if (date_doc.isNone() || date_doc.isEmptyArray()) {
-    return 0;
-  }
-  std::string date = date_doc.at(0).copyString();
-  std::string year = date.substr(0, 4);
-  std::string month = date.substr(4, 2);
-  std::string day = date.substr(6);
-
-  std::string pt_str =
-      boost::str(boost::format("%1%-%2%-%3% 00:00:00") % year % month % day);
-  LOG(INFO) << pt_str;
-  boost::posix_time::ptime pt = boost::posix_time::time_from_string(pt_str);
-  time_t tt = boost::posix_time::to_time_t(pt);
-  // next day
-  time_t next_tt = tt + 24 * 3600;
-  // next day end timestamp, input as start_ts for write_to_balance_db
-  time_t next_tt_end = next_tt + 24 * 3600;
-  return next_tt_end;
-}
-
 int main(int argc, char *argv[]) {
 
   gflags::ParseCommandLineFlags(&argc, &argv, true);
@@ -246,7 +204,6 @@ int main(int argc, char *argv[]) {
   int32_t start_ts = FLAGS_start_ts;
   int32_t end_ts = FLAGS_end_ts;
   size_t thread_nums = FLAGS_thread_nums;
-  bool auto_start = FLAGS_auto_start;
 
   db_ptr_set_t db_ptr_set = get_db_ptr_set(chain);
   tdb_ptr_t tdb_ptr = db_ptr_set.tdb_ptr;
@@ -254,12 +211,9 @@ int main(int argc, char *argv[]) {
   bdb_ptr_t bdb_ptr = db_ptr_set.bdb_ptr;
 
   time_t seconds_of_day = 24 * 60 * 60;
+  int32_t days = 7;
 
-  if (auto_start) {
-    start_ts = get_balance_db_start_ts(chain);
-  }
-
-  for (time_t ts = start_ts; ts < end_ts; ts += seconds_of_day) {
+  for (time_t ts = start_ts; ts < end_ts; ts += seconds_of_day * days) {
     write_to_balance_db(tdb_ptr, adb_ptr, bdb_ptr, ts, thread_nums);
   }
   return 0;
