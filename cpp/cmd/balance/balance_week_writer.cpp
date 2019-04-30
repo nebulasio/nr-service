@@ -6,6 +6,7 @@ DEFINE_string(chain, "nebulas", "chain name, nebulas or eth");
 DEFINE_int32(start_ts, 0, "the first day end timestamp");
 DEFINE_int32(end_ts, 1, "the last day end timestamp");
 DEFINE_int32(thread_nums, 1, "parallel thread numbers");
+DEFINE_bool(auto_start, true, "using auto start timestamp");
 
 typedef neb::transaction_db_interface transaction_db_t;
 typedef std::shared_ptr<transaction_db_t> tdb_ptr_t;
@@ -197,6 +198,51 @@ db_ptr_set_t get_db_ptr_set(const std::string &chain) {
   return db_ptr_set_t{tdb_ptr, adb_ptr, bdb_ptr};
 }
 
+time_t get_balance_db_start_ts(const std::string &chain,
+                               const std::string &collection) {
+
+  assert(chain.compare("nebulas") == 0 || chain.compare("eth") == 0);
+  std::unique_ptr<::arangodb::fuerte::Response> resp_ptr;
+
+  std::string aql = boost::str(
+      boost::format(
+          "for item in %1% sort item.date desc limit 1 return item.date") %
+      collection);
+
+  if (chain.compare("nebulas") == 0) {
+    std::shared_ptr<nebulas_balance_db_t> ptr =
+        std::make_shared<nebulas_balance_db_t>(
+            std::getenv("DB_URL"), std::getenv("DB_USER_NAME"),
+            std::getenv("DB_PASSWORD"), std::getenv("NEBULAS_DB"));
+
+    resp_ptr = ptr->aql_query(aql, 1);
+
+  } else {
+    std::shared_ptr<eth_balance_db_t> ptr = std::make_shared<eth_balance_db_t>(
+        std::getenv("DB_URL"), std::getenv("DB_USER_NAME"),
+        std::getenv("DB_PASSWORD"), std::getenv("ETH_DB"));
+
+    resp_ptr = ptr->aql_query(aql, 1);
+  }
+
+  auto date_doc = resp_ptr->slices().front().get("result");
+  if (date_doc.isNone() || date_doc.isEmptyArray()) {
+    return 0;
+  }
+  std::string date_range = date_doc.at(0).copyString();
+  LOG(INFO) << "date range " << date_range;
+  std::string date = date_range.substr(9);
+  std::string year = date.substr(0, 4);
+  std::string month = date.substr(4, 2);
+  std::string day = date.substr(6);
+
+  std::string pt_str =
+      boost::str(boost::format("%1%-%2%-%3% 00:00:00") % year % month % day);
+  LOG(INFO) << pt_str;
+  boost::posix_time::ptime pt = boost::posix_time::time_from_string(pt_str);
+  return boost::posix_time::to_time_t(pt);
+}
+
 int main(int argc, char *argv[]) {
 
   gflags::ParseCommandLineFlags(&argc, &argv, true);
@@ -204,6 +250,7 @@ int main(int argc, char *argv[]) {
   int32_t start_ts = FLAGS_start_ts;
   int32_t end_ts = FLAGS_end_ts;
   size_t thread_nums = FLAGS_thread_nums;
+  bool auto_start = FLAGS_auto_start;
 
   db_ptr_set_t db_ptr_set = get_db_ptr_set(chain);
   tdb_ptr_t tdb_ptr = db_ptr_set.tdb_ptr;
@@ -212,6 +259,11 @@ int main(int argc, char *argv[]) {
 
   time_t seconds_of_day = 24 * 60 * 60;
   int32_t days = 7;
+
+  if (auto_start) {
+    start_ts = get_balance_db_start_ts(chain, "balance_week");
+    start_ts += seconds_of_day * days;
+  }
 
   for (time_t ts = start_ts; ts < end_ts; ts += seconds_of_day * days) {
     write_to_balance_db(tdb_ptr, adb_ptr, bdb_ptr, ts, thread_nums);

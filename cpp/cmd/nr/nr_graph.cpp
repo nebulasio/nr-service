@@ -49,7 +49,7 @@ void write_date_nr(const db_ptr_set_t db_ptr_set, const std::string &date,
   bdb_ptr_t bdb_ptr = db_ptr_set.bdb_ptr;
 
   LOG(INFO) << "start block: " << start_block << " , end block: " << end_block;
-  neb::rank_params_t rp{2000.0, 200000.0, 100.0, 1000.0, 0.75, 3.14};
+  neb::rank_params_t rp{100.0, 2.0, 6.0, -9.0, 1.0, 2.0};
   neb::nebulas_rank nr(tdb_ptr, adb_ptr, rp, start_block, end_block);
 
   std::string filename = "./cache/" + chain + '-' + date + ".dot";
@@ -79,7 +79,7 @@ void write_date_nr(const db_ptr_set_t db_ptr_set, const std::string &date,
     LOG(INFO) << "we have " << tgs.size() << " subgraphs.";
     for (auto it = tgs.begin(); it != tgs.end(); it++) {
       neb::transaction_graph_ptr_t ptr = *it;
-      neb::graph_algo::remove_cycles_based_on_time_sequence(
+      neb::graph_algo::non_recursive_remove_cycles_based_on_time_sequence(
           ptr->internal_graph());
       neb::graph_algo::merge_edges_with_same_from_and_same_to(
           ptr->internal_graph());

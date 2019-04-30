@@ -171,7 +171,7 @@ void write_date_nr(const tdb_ptr_t tdb_ptr, const adb_ptr_t adb_ptr,
   auto date = block_info.date;
 
   LOG(INFO) << "start block: " << start_block << " , end block: " << end_block;
-  neb::rank_params_t rp{2000.0, 200000.0, 100.0, 1000.0, 0.75, 3.14};
+  neb::rank_params_t rp{100.0, 2.0, 6.0, -9.0, 1.0, 2.0};
   neb::nebulas_rank nr(tdb_ptr, adb_ptr, rp, start_block, end_block);
 
   // account inter transactions
@@ -193,7 +193,7 @@ void write_date_nr(const tdb_ptr_t tdb_ptr, const adb_ptr_t adb_ptr,
   LOG(INFO) << "we have " << tgs.size() << " subgraphs.";
   for (auto it = tgs.begin(); it != tgs.end(); it++) {
     neb::transaction_graph_ptr_t ptr = *it;
-    neb::graph_algo::remove_cycles_based_on_time_sequence(
+    neb::graph_algo::non_recursive_remove_cycles_based_on_time_sequence(
         ptr->internal_graph());
     neb::graph_algo::merge_edges_with_same_from_and_same_to(
         ptr->internal_graph());
@@ -349,21 +349,17 @@ int main(int argc, char *argv[]) {
 
   while (true) {
     time_t time_now = neb::time_utils::get_universal_timestamp();
-    LOG(INFO) << time_now % seconds_of_day;
-    if (time_now % seconds_of_day < 60) {
+    LOG(INFO) << "seconds before trigger nr event: "
+              << seconds_of_day - time_now % seconds_of_day;
+    if (time_now % seconds_of_day < 10) {
       block_info_t info = get_start_and_end_block(tdb_ptr, time_now);
-      if (info.date.compare(std::string()) == 0) {
-        std::this_thread::sleep_for(std::chrono::seconds(60));
-        continue;
-      }
-
       write_date_balance(tdb_ptr, adb_ptr, bdb_ptr, info);
       std::this_thread::sleep_for(std::chrono::seconds(60));
       write_date_nr(tdb_ptr, adb_ptr, ndb_ptr, bdb_ptr, info);
       LOG(INFO) << "waiting...";
     }
     boost::asio::io_service io;
-    boost::asio::deadline_timer t(io, boost::posix_time::seconds(60));
+    boost::asio::deadline_timer t(io, boost::posix_time::seconds(1));
     t.wait();
   }
   return 0;
