@@ -179,7 +179,14 @@ nebulas_rank::get_account_weight(
 double nebulas_rank::f_account_rank(double a, double b, double c, double d,
                                     double mu, double lambda, double S,
                                     double R) {
-  return pow(S * a / (S + b), mu) * pow(R * c / (R + d), lambda);
+  // return pow(S * a / (S + b), mu) * pow(R * c / (R + d), lambda);
+  double theta = 1.0;
+  auto gamma = pow(theta * R / (R + mu), lambda);
+  double ret = 0.0;
+  if (S > 0) {
+    ret = (S / (1.0 + pow(a / S, 1.0 / b))) * gamma;
+  }
+  return ret;
 }
 
 std::shared_ptr<std::unordered_map<std::string, double>>
@@ -226,7 +233,8 @@ nebulas_rank::get_account_score_service() {
 
   for (auto it = tgs.begin(); it != tgs.end(); it++) {
     transaction_graph_ptr_t ptr = *it;
-    graph_algo::remove_cycles_based_on_time_sequence(ptr->internal_graph());
+    graph_algo::non_recursive_remove_cycles_based_on_time_sequence(
+        ptr->internal_graph());
     graph_algo::merge_edges_with_same_from_and_same_to(ptr->internal_graph());
   }
   LOG(INFO) << "done with remove cycle.";
