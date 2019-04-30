@@ -3,10 +3,7 @@
 #include "utils.h"
 
 DEFINE_string(chain, "nebulas", "chain name, nebulas or eth");
-DEFINE_int64(start_block, 0, "the start block height");
-DEFINE_int64(end_block, 1, "the end block height");
-DEFINE_int32(start_ts, 0, "the first day end timestamp");
-DEFINE_int32(end_ts, 1, "the last day end timestamp");
+DEFINE_string(log_to, "./", "log files directory");
 
 typedef neb::transaction_db_interface transaction_db_t;
 typedef std::shared_ptr<transaction_db_t> tdb_ptr_t;
@@ -384,6 +381,8 @@ time_t get_balance_db_start_ts(const std::string &chain,
 int main(int argc, char *argv[]) {
   gflags::ParseCommandLineFlags(&argc, &argv, true);
   std::string chain = FLAGS_chain;
+  FLAGS_log_dir = FLAGS_log_to;
+  google::InitGoogleLogging(argv[0]);
 
   db_ptr_set_t db_ptr_set = get_db_ptr_set(chain);
   tdb_ptr_t tdb_ptr = db_ptr_set.tdb_ptr;
