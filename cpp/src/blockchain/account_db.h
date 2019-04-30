@@ -198,6 +198,9 @@ public:
 
       int64_t height = it->template get<::neb::height>();
       std::string tx_value = it->template get<::neb::tx_value>();
+      if (!neb::string_utils::is_number(tx_value)) {
+        continue;
+      }
       account_balance_t value =
           tx_value.compare(std::string()) == 0
               ? 0
