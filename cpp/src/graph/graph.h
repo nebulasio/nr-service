@@ -1,16 +1,29 @@
 #pragma once
 
 #include "graph/common.h"
+#include <boost/graph/adjacency_list.hpp>
+
+namespace boost {
+enum edge_sort_id_t { edge_sort_id };
+enum edge_check_id_t { edge_check_id };
+
+BOOST_INSTALL_PROPERTY(edge, sort_id);
+BOOST_INSTALL_PROPERTY(edge, check_id);
+} // namespace boost
 
 namespace neb {
 
 class transaction_graph {
 public:
+  typedef boost::property<
+      boost::edge_weight_t, double,
+      boost::property<boost::edge_timestamp_t, double,
+                      boost::property<boost::edge_sort_id_t, int64_t>>>
+      edge_property_t;
+
   typedef boost::adjacency_list<
       boost::vecS, boost::vecS, boost::bidirectionalS,
-      boost::property<boost::vertex_name_t, std::string>,
-      boost::property<boost::edge_weight_t, double,
-                      boost::property<boost::edge_timestamp_t, double>>>
+      boost::property<boost::vertex_name_t, std::string>, edge_property_t>
       internal_graph_t;
 
   typedef typename boost::graph_traits<internal_graph_t>::vertex_descriptor

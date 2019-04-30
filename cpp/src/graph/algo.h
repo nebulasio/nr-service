@@ -17,7 +17,7 @@ struct in_out_degree {
 
 class graph_algo {
 public:
-  static void remove_cycles_based_on_time_sequence(
+  static void non_recursive_remove_cycles_based_on_time_sequence(
       transaction_graph::internal_graph_t &graph);
 
   static void merge_edges_with_same_from_and_same_to(
@@ -42,23 +42,23 @@ public:
   static auto get_degree_sum(const transaction_graph::internal_graph_t &graph)
       -> std::shared_ptr<std::unordered_map<std::string, int>>;
 
-private:
-  static void dfs_find_a_cycle_from_vertex_based_on_time_sequence(
-      const transaction_graph::vertex_descriptor_t &start_vertex,
-      const transaction_graph::vertex_descriptor_t &v,
+  static bool decrease_graph_edges(
       const transaction_graph::internal_graph_t &graph,
-      std::set<transaction_graph::vertex_descriptor_t> &visited,
-      std::vector<transaction_graph::edge_descriptor_t> &edges, bool &has_cycle,
-      std::vector<transaction_graph::edge_descriptor_t> &ret);
+      std::unordered_set<transaction_graph::vertex_descriptor_t> &dead_v,
+      std::unordered_map<transaction_graph::vertex_descriptor_t, size_t>
+          &dead_to,
+      std::unordered_map<transaction_graph::vertex_descriptor_t, size_t>
+          &to_dead);
 
-  static auto find_a_cycle_from_vertex_based_on_time_sequence(
-      const transaction_graph::vertex_descriptor_t &v,
-      const transaction_graph::internal_graph_t &graph)
-      -> std::vector<transaction_graph::edge_descriptor_t>;
-
-  static auto find_a_cycle_based_on_time_sequence(
-      const transaction_graph::internal_graph_t &graph)
-      -> std::vector<transaction_graph::edge_descriptor_t>;
+private:
+  static void bfs_decrease_graph_edges(
+      const transaction_graph::internal_graph_t &graph,
+      const std::unordered_set<transaction_graph::vertex_descriptor_t> &dead_v,
+      std::unordered_set<transaction_graph::vertex_descriptor_t> &tmp_dead,
+      std::unordered_map<transaction_graph::vertex_descriptor_t, size_t>
+          &dead_to,
+      std::unordered_map<transaction_graph::vertex_descriptor_t, size_t>
+          &to_dead);
 
   static transaction_graph_ptr_t
   merge_two_graphs(transaction_graph_ptr_t tg,
