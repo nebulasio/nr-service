@@ -90,7 +90,7 @@ block_height_t nebulas_rank::get_max_height_this_block_interval(
   if (txs.size() > 0) {
     return txs[txs.size() - 1].template get<::neb::height>();
   }
-  return 0;
+  return m_start_block;
 }
 
 std::shared_ptr<std::unordered_set<std::string>>
@@ -120,19 +120,17 @@ nebulas_rank::get_account_balance_median(
 
   db_ptr->set_height_address_val(m_start_block, m_end_block, addr_balance);
 
+  auto max_height = m_start_block;
   for (auto it = txs.begin(); it != txs.end(); it++) {
-    int max_height_this_interval = get_max_height_this_block_interval(*it);
+    auto height = get_max_height_this_block_interval(*it);
+    height = std::max(height, max_height);
     for (auto ite = accounts.begin(); ite != accounts.end(); ite++) {
       std::string addr = *ite;
-      double balance = boost::lexical_cast<double>(
-          db_ptr->get_account_balance(max_height_this_interval, addr));
-      // LOG(INFO) << "address: " << addr << ", height: " <<
-      // max_height_this_interval << ", balance: " << balance;
-      // std::cout << "address: " << addr
-      //<< ", height: " << max_height_this_interval
-      //<< ", balance: " << balance << std::endl;
+      auto int128_balance = db_ptr->get_account_balance(height, addr);
+      double balance = boost::lexical_cast<double>(int128_balance);
       addr_balance_v[addr].push_back(balance);
     }
+    max_height = std::max(max_height, height);
   }
 
   for (auto it = addr_balance_v.begin(); it != addr_balance_v.end(); it++) {
@@ -214,12 +212,16 @@ nebulas_rank::get_account_score_service() {
 
   LOG(INFO) << "in func get_account_score_service";
 
-  auto it_ret = m_tdb_ptr->read_inter_transaction_from_db_with_duration(
-      m_start_block, m_end_block);
+  auto it_ret =
+      m_tdb_ptr->read_succ_and_failed_inter_transaction_from_db_with_duration(
+          m_start_block, m_end_block);
   auto ret = *it_ret;
   LOG(INFO) << "account to account: " << ret.size();
+  auto succ_it_ret = m_tdb_ptr->filter_success_transaction(*it_ret);
+  auto succ_ret = *succ_it_ret;
+  LOG(INFO) << "succ account to account: " << succ_ret.size();
 
-  auto it_txs = split_transactions_by_x_block_interval(ret);
+  auto it_txs = split_transactions_by_x_block_interval(succ_ret);
   auto txs = *it_txs;
   LOG(INFO) << "split transactions into " << txs.size() << " size.";
   filter_empty_transactions_this_interval(txs);

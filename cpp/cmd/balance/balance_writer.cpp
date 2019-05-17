@@ -216,14 +216,11 @@ time_t get_balance_db_start_ts(const std::string &chain,
         std::make_shared<nebulas_balance_db_t>(
             std::getenv("DB_URL"), std::getenv("DB_USER_NAME"),
             std::getenv("DB_PASSWORD"), std::getenv("NEBULAS_DB"));
-
     resp_ptr = ptr->aql_query(aql, 1);
-
   } else {
     std::shared_ptr<eth_balance_db_t> ptr = std::make_shared<eth_balance_db_t>(
         std::getenv("DB_URL"), std::getenv("DB_USER_NAME"),
         std::getenv("DB_PASSWORD"), std::getenv("ETH_DB"));
-
     resp_ptr = ptr->aql_query(aql, 1);
   }
 

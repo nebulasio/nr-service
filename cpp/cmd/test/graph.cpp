@@ -36,8 +36,9 @@ int main(int argc, char *argv[]) {
           std::getenv("DB_URL"), std::getenv("DB_USER_NAME"),
           std::getenv("DB_PASSWORD"), std::getenv("NEBULAS_DB"));
 
-  auto txs_ptr = tx_ptr->read_inter_transaction_from_db_with_duration(
-      start_block, end_block);
+  auto txs_ptr =
+      tx_ptr->read_succ_and_failed_inter_transaction_from_db_with_duration(
+          start_block, end_block);
 
   auto tgp_ptr_raw = build_graph_from_transactions(*txs_ptr);
   tgp_ptr_raw->write_to_graphviz("xx.dot");

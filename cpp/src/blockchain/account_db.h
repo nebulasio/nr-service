@@ -41,6 +41,12 @@ public:
                                           const std::string &height) = 0;
 
   virtual std::string account_info_to_string(const account_info_t &info) = 0;
+
+protected:
+  virtual void init_height_address_val_internal(
+      int64_t start_block,
+      const std::unordered_map<account_address_t, account_balance_t>
+          &addr_balance) = 0;
 };
 
 namespace internal {
@@ -184,6 +190,9 @@ public:
   virtual void set_height_address_val(
       int64_t start_block, int64_t end_block,
       std::unordered_map<account_address_t, account_balance_t> &addr_balance) {
+
+    init_height_address_val_internal(start_block, addr_balance);
+
     LOG(INFO) << "template account_db, init height address value begin";
     auto it_txs =
         m_tdb_ptr
@@ -197,8 +206,10 @@ public:
       std::string to = it->template get<::neb::to>();
 
       int64_t height = it->template get<::neb::height>();
+      int32_t status = it->template get<::neb::status>();
       std::string tx_value = it->template get<::neb::tx_value>();
-      if (!neb::string_utils::is_number(tx_value)) {
+      std::string tx_type = it->template get<::neb::tx_type>();
+      if (!status && tx_type.compare("event") == 0) {
         continue;
       }
       account_balance_t value =
@@ -213,19 +224,20 @@ public:
         addr_balance.insert(std::make_pair(to, 0));
       }
 
-      int32_t status = it->template get<::neb::status>();
-      if (status) {
-        addr_balance[from] -= value;
-        addr_balance[to] += value;
-      }
+      if (height != start_block) {
+        if (status) {
+          addr_balance[from] -= value;
+          addr_balance[to] += value;
+        }
 
-      std::string gas_used = it->template get<::neb::gas_used>();
-      if (gas_used.compare(std::string()) != 0) {
-        std::string gas_price = it->template get<::neb::gas_price>();
-        account_balance_t gas_val =
-            boost::lexical_cast<account_balance_t>(gas_used) *
-            boost::lexical_cast<account_balance_t>(gas_price);
-        addr_balance[from] -= gas_val;
+        std::string gas_used = it->template get<::neb::gas_used>();
+        if (gas_used.compare(std::string()) != 0) {
+          std::string gas_price = it->template get<::neb::gas_price>();
+          account_balance_t gas_val =
+              boost::lexical_cast<account_balance_t>(gas_used) *
+              boost::lexical_cast<account_balance_t>(gas_price);
+          addr_balance[from] -= gas_val;
+        }
       }
 
       if (m_height_addr_val.find(height) == m_height_addr_val.end()) {
@@ -281,6 +293,28 @@ public:
                                           const std::string &height) {
     return ::neb::internal::account_db_traits<DB>::get_address_balance(address,
                                                                        height);
+  }
+
+protected:
+  virtual void init_height_address_val_internal(
+      int64_t start_block,
+      const std::unordered_map<account_address_t, account_balance_t>
+          &addr_balance) {
+
+    for (auto &ele : addr_balance) {
+      std::vector<neb::block_height_t> v{start_block};
+      m_addr_height_list.insert(std::make_pair(ele.first, v));
+
+      auto iter = m_height_addr_val.find(start_block);
+      if (iter == m_height_addr_val.end()) {
+        std::unordered_map<account_address_t, account_balance_t> addr_val = {
+            {ele.first, ele.second}};
+        m_height_addr_val.insert(std::make_pair(start_block, addr_val));
+      } else {
+        auto &addr_val = iter->second;
+        addr_val.insert(std::make_pair(ele.first, ele.second));
+      }
+    }
   }
 
 private:

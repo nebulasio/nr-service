@@ -30,8 +30,9 @@ TEST(test_graph, test_read_write_graphviz) {
       std::getenv("DB_URL"), std::getenv("DB_USER_NAME"),
       std::getenv("DB_PASSWORD"), std::getenv("NEBULAS_DB"));
   auto txs_ptr =
-      transaction_db_ptr->read_inter_transaction_from_db_with_duration(1000000,
-                                                                       1205000);
+      transaction_db_ptr
+          ->read_succ_and_failed_inter_transaction_from_db_with_duration(
+              1000000, 1205000);
 
   tgp_raw = build_graph_from_transactions(*txs_ptr);
   tgp_raw->write_to_graphviz("xx.dot");

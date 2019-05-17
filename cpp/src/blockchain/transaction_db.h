@@ -34,8 +34,8 @@ typedef typename transaction_table_t::row_type transaction_info_t;
 class transaction_db_interface {
 public:
   virtual std::shared_ptr<std::vector<transaction_info_t>>
-  read_inter_transaction_from_db_with_duration(block_height_t start_block,
-                                               block_height_t end_block) = 0;
+  read_succ_and_failed_inter_transaction_from_db_with_duration(
+      block_height_t start_block, block_height_t end_block) = 0;
   virtual std::shared_ptr<std::vector<transaction_info_t>>
   read_success_and_failed_transaction_from_db_with_block_duration(
       block_height_t start_block, block_height_t end_block) = 0;
@@ -46,6 +46,9 @@ public:
   virtual std::shared_ptr<std::vector<transaction_info_t>>
   read_success_and_failed_transaction_from_db_with_address(
       const std::string &address) = 0;
+
+  virtual std::shared_ptr<std::vector<transaction_info_t>>
+  filter_success_transaction(const std::vector<transaction_info_t> &txs) = 0;
 
   virtual std::string
   transaction_infos_to_string(const std::vector<transaction_info_t> &rs) = 0;
@@ -109,8 +112,8 @@ public:
       : db<DB, transaction_db_infosetter>(url, usrname, passwd, dbname) {}
 
   virtual std::shared_ptr<std::vector<transaction_info_t>>
-  read_inter_transaction_from_db_with_duration(block_height_t start_block,
-                                               block_height_t end_block) {
+  read_succ_and_failed_inter_transaction_from_db_with_duration(
+      block_height_t start_block, block_height_t end_block) {
     std::vector<transaction_info_t> ret;
 
     block_height_t block_interval = 1 << 6;
@@ -118,12 +121,15 @@ public:
       auto e = s + block_interval;
       if (e > end_block) {
         auto v =
-            read_inter_transaction_from_db_with_duration_sharding(s, end_block);
+            read_succ_and_failed_inter_transaction_from_db_with_duration_sharding(
+                s, end_block);
         ret.insert(ret.end(), v->begin(), v->end());
         break;
       }
 
-      auto v = read_inter_transaction_from_db_with_duration_sharding(s, e);
+      auto v =
+          read_succ_and_failed_inter_transaction_from_db_with_duration_sharding(
+              s, e);
       ret.insert(ret.end(), v->begin(), v->end());
 
       LOG(INFO) << boost::str(
@@ -250,6 +256,17 @@ public:
     this->aql_query(rm_txs);
   }
 
+  virtual std::shared_ptr<std::vector<transaction_info_t>>
+  filter_success_transaction(const std::vector<transaction_info_t> &txs) {
+    auto txs_ptr = std::make_shared<std::vector<transaction_info_t>>();
+    for (auto &tx : txs) {
+      if (tx.template get<::neb::status>()) {
+        txs_ptr->push_back(tx);
+      }
+    }
+    return txs_ptr;
+  }
+
   virtual std::string
   transaction_infos_to_string(const std::vector<transaction_info_t> &rs) {
     boost::property_tree::ptree root;
@@ -309,12 +326,12 @@ private:
   }
 
   std::shared_ptr<std::vector<transaction_info_t>>
-  read_inter_transaction_from_db_with_duration_sharding(
+  read_succ_and_failed_inter_transaction_from_db_with_duration_sharding(
       block_height_t start_block, block_height_t end_block) {
 
     const std::string aql = boost::str(
         boost::format(
-            "for tx in transaction filter tx.status!=0 and "
+            "for tx in transaction filter "
             "tx.type_from=='normal' and tx.type_to=='normal' and "
             "tx.height>=%1% and tx.height<%2% return {tx_id:tx._key, "
             "status:tx.status, from:tx.from, to:tx.to, tx_value:tx.tx_value, "

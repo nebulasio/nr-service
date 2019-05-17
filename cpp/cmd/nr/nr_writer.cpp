@@ -3,6 +3,7 @@
 #include "utils.h"
 
 DEFINE_string(chain, "nebulas", "chain name, nebulas or eth");
+DEFINE_int32(days, 1, "nebulas rank db days interval");
 DEFINE_int32(start_ts, 0, "the first day end timestamp");
 DEFINE_int32(end_ts, 1, "the last day end timestamp");
 DEFINE_int32(thread_nums, 1, "the number of thread");
@@ -35,6 +36,11 @@ struct db_ptr_set_t {
   bdb_ptr_t bdb_ptr;
 };
 
+std::string balance_db_name = "balance_";
+std::string nr_db_name = "nr_";
+time_t seconds_of_day = 24 * 60 * 60;
+time_t seconds_interval = 0;
+
 bool exists(const std::string &p) {
   return boost::filesystem::exists(boost::filesystem::path(p));
 }
@@ -55,13 +61,16 @@ void write_date_nr(const db_ptr_set_t db_ptr_set, const std::string &date,
 
   // account inter transactions
   auto it_account_inter_txs =
-      tdb_ptr->read_inter_transaction_from_db_with_duration(start_block,
-                                                            end_block);
+      tdb_ptr->read_succ_and_failed_inter_transaction_from_db_with_duration(
+          start_block, end_block);
   auto account_inter_txs = *it_account_inter_txs;
   LOG(INFO) << "account to account: " << account_inter_txs.size();
+  auto succ_it_ret = tdb_ptr->filter_success_transaction(*it_account_inter_txs);
+  auto succ_ret = *succ_it_ret;
+  LOG(INFO) << "succ account to account: " << succ_ret.size();
 
   // graph
-  auto it_txs_v = nr.split_transactions_by_x_block_interval(account_inter_txs);
+  auto it_txs_v = nr.split_transactions_by_x_block_interval(succ_ret);
   auto txs_v = *it_txs_v;
 
   neb::transaction_graph_ptr_t tg = std::make_shared<neb::transaction_graph>();
@@ -102,7 +111,7 @@ void write_date_nr(const db_ptr_set_t db_ptr_set, const std::string &date,
 
   std::unordered_map<neb::account_address_t, neb::account_balance_t>
       addr_balance;
-  auto it_date_balance = bdb_ptr->read_balance_by_date(date, "balance");
+  auto it_date_balance = bdb_ptr->read_balance_by_date(date, balance_db_name);
   auto date_balance = *it_date_balance;
   LOG(INFO) << "for date " << date << ", size: " << date_balance.size();
   for (auto &it : date_balance) {
@@ -148,18 +157,21 @@ void write_date_nr(const db_ptr_set_t db_ptr_set, const std::string &date,
       continue;
     }
 
-    neb::nebulas::nas nas_in_val = neb::nebulas::nas_cast<neb::nebulas::nas>(
-        neb::nebulas::wei(in_out_vals.find(addr)->second.in_val));
-    neb::nebulas::nas nas_out_val = neb::nebulas::nas_cast<neb::nebulas::nas>(
-        neb::nebulas::wei(in_out_vals.find(addr)->second.out_val));
-    neb::nebulas::nas nas_stake = neb::nebulas::nas_cast<neb::nebulas::nas>(
-        neb::nebulas::wei(stakes.find(addr)->second));
+    auto wei_in_val = neb::nebulas::wei(in_out_vals.find(addr)->second.in_val);
+    auto nas_in_val = neb::nebulas::nas_cast<neb::nebulas::nas>(wei_in_val);
 
-    // LOG(INFO) << addr << ',' << account_median[addr] << ','
+    auto wei_out_val =
+        neb::nebulas::wei(in_out_vals.find(addr)->second.out_val);
+    auto nas_out_val = neb::nebulas::nas_cast<neb::nebulas::nas>(wei_out_val);
+
+    auto wei_stake = neb::nebulas::wei(stakes.find(addr)->second);
+    auto nas_stake = neb::nebulas::nas_cast<neb::nebulas::nas>(wei_stake);
+
+    // std::cout << addr << ',' << account_median[addr] << ','
     //<< account_rank[addr] << ',' << in_out_degrees[addr].in_degree
     //<< ',' << in_out_degrees[addr].out_degree << ',' << degrees[addr]
     //<< ',' << nas_in_val.value() << ',' << nas_out_val.value() << ','
-    //<< nas_stake.value();
+    //<< nas_stake.value() << std::endl;
 
     neb::nr_info_t info;
     info.template set<::neb::date, ::neb::address, ::neb::median, ::neb::weight,
@@ -173,7 +185,7 @@ void write_date_nr(const db_ptr_set_t db_ptr_set, const std::string &date,
     infos.push_back(info);
   }
   LOG(INFO) << "insert to db begin...";
-  ndb_ptr->insert_date_nrs(infos, "nr");
+  // ndb_ptr->insert_date_nrs(infos, "nr");
   LOG(INFO) << "insert to db done";
 }
 
@@ -183,8 +195,6 @@ void write_to_nebulas_rank_db(const db_ptr_set_t db_ptr_set, time_t end_ts) {
   adb_ptr_t adb_ptr = db_ptr_set.adb_ptr;
   ndb_ptr_t ndb_ptr = db_ptr_set.ndb_ptr;
   bdb_ptr_t bdb_ptr = db_ptr_set.bdb_ptr;
-
-  time_t seconds_of_day = 24 * 60 * 60;
 
   auto it_txs_in_end_last_day =
       tdb_ptr->read_success_and_failed_transaction_from_db_with_ts_duration(
@@ -197,7 +207,7 @@ void write_to_nebulas_rank_db(const db_ptr_set_t db_ptr_set, time_t end_ts) {
   neb::block_height_t end_block =
       txs_in_end_last_day.back().template get<::neb::height>();
 
-  time_t start_ts = end_ts - seconds_of_day;
+  time_t start_ts = end_ts - seconds_interval;
   auto it_txs_in_start_last_day =
       tdb_ptr->read_success_and_failed_transaction_from_db_with_ts_duration(
           std::to_string(start_ts - seconds_of_day), std::to_string(start_ts));
@@ -209,7 +219,9 @@ void write_to_nebulas_rank_db(const db_ptr_set_t db_ptr_set, time_t end_ts) {
   neb::block_height_t start_block =
       txs_in_start_last_day.back().template get<::neb::height>();
 
-  std::string date = neb::time_utils::time_t_to_date(start_ts);
+  std::string start_date = neb::time_utils::time_t_to_date(start_ts);
+  std::string end_date = neb::time_utils::time_t_to_date(end_ts);
+  std::string date = start_date + '-' + end_date;
   LOG(INFO) << date;
   write_date_nr(db_ptr_set, date, start_block, end_block);
   return;
@@ -261,10 +273,9 @@ void para_run(const db_ptr_set_t db_ptr_set, time_t end_ts,
 
   auto start_time = std::chrono::high_resolution_clock::now();
   std::vector<std::thread> tv;
-  time_t seconds_of_day = 24 * 60 * 60;
 
   for (int32_t i = 0; i < thread_nums; i++) {
-    time_t ts = end_ts + i * seconds_of_day;
+    time_t ts = end_ts + i * seconds_interval;
     std::thread t(
         [&db_ptr_set, ts]() { write_to_nebulas_rank_db(db_ptr_set, ts); });
     tv.push_back(std::move(t));
@@ -281,33 +292,36 @@ void para_run(const db_ptr_set_t db_ptr_set, time_t end_ts,
                    .count();
 }
 
-time_t get_nr_db_start_ts(const std::string &chain) {
+time_t get_nr_db_start_ts(const std::string &chain,
+                          const std::string &nr_db_name) {
 
   assert(chain.compare("nebulas") == 0 || chain.compare("eth") == 0);
   std::unique_ptr<::arangodb::fuerte::Response> resp_ptr;
+
+  std::string aql = boost::str(
+      boost::format(
+          "for item in %1% sort item.date desc limit 1 return item.date") %
+      nr_db_name);
 
   if (chain.compare("nebulas") == 0) {
     std::shared_ptr<nebulas_nr_db_t> ptr = std::make_shared<nebulas_nr_db_t>(
         std::getenv("DB_URL"), std::getenv("DB_USER_NAME"),
         std::getenv("DB_PASSWORD"), std::getenv("NEBULAS_DB"));
-
-    resp_ptr = ptr->aql_query(
-        "for item in nr sort item.date desc limit 1 return item.date", 1);
-
+    resp_ptr = ptr->aql_query(aql, 1);
   } else {
     std::shared_ptr<eth_nr_db_t> ptr = std::make_shared<eth_nr_db_t>(
         std::getenv("DB_URL"), std::getenv("DB_USER_NAME"),
         std::getenv("DB_PASSWORD"), std::getenv("ETH_DB"));
-
-    resp_ptr = ptr->aql_query(
-        "for item in nr sort item.date desc limit 1 return item.date", 1);
+    resp_ptr = ptr->aql_query(aql, 1);
   }
 
   auto date_doc = resp_ptr->slices().front().get("result");
   if (date_doc.isNone() || date_doc.isEmptyArray()) {
     return 0;
   }
-  std::string date = date_doc.at(0).copyString();
+  std::string date_range = date_doc.at(0).copyString();
+  LOG(INFO) << "date range " << date_range;
+  std::string date = date_range.substr(9);
   std::string year = date.substr(0, 4);
   std::string month = date.substr(4, 2);
   std::string day = date.substr(6);
@@ -316,31 +330,32 @@ time_t get_nr_db_start_ts(const std::string &chain) {
       boost::str(boost::format("%1%-%2%-%3% 00:00:00") % year % month % day);
   LOG(INFO) << pt_str;
   boost::posix_time::ptime pt = boost::posix_time::time_from_string(pt_str);
-  time_t tt = boost::posix_time::to_time_t(pt);
-  // next day
-  time_t next_tt = tt + 24 * 3600;
-  // next day end timestamp, input as start_ts for write_to_balance_db
-  time_t next_tt_end = next_tt + 24 * 3600;
-  return next_tt_end;
+  return boost::posix_time::to_time_t(pt);
 }
 
 int main(int argc, char *argv[]) {
   gflags::ParseCommandLineFlags(&argc, &argv, true);
   std::string chain = FLAGS_chain;
+  int32_t days = FLAGS_days;
+  balance_db_name = balance_db_name + std::to_string(days);
+  nr_db_name = nr_db_name + std::to_string(days);
+  seconds_interval = seconds_of_day * days;
+
   int32_t start_ts = FLAGS_start_ts;
   int32_t end_ts = FLAGS_end_ts;
   int32_t thread_nums = FLAGS_thread_nums;
   bool auto_start = FLAGS_auto_start;
 
   db_ptr_set_t db_ptr_set = get_db_ptr_set(chain);
-  time_t seconds_of_day = 24 * 60 * 60;
 
   if (auto_start) {
-    start_ts = get_nr_db_start_ts(chain);
+    start_ts = get_nr_db_start_ts(chain, nr_db_name);
+    start_ts += seconds_interval;
+    end_ts = neb::time_utils::get_universal_timestamp();
   }
 
   for (time_t ts = start_ts; ts < end_ts;
-       ts += (seconds_of_day * thread_nums)) {
+       ts += (seconds_interval * thread_nums)) {
     para_run(db_ptr_set, ts, thread_nums);
   }
   return 0;
