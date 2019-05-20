@@ -185,7 +185,7 @@ void write_date_nr(const db_ptr_set_t db_ptr_set, const std::string &date,
     infos.push_back(info);
   }
   LOG(INFO) << "insert to db begin...";
-  // ndb_ptr->insert_date_nrs(infos, "nr");
+  ndb_ptr->insert_date_nrs(infos, nr_db_name);
   LOG(INFO) << "insert to db done";
 }
 
